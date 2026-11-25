@@ -198,11 +198,11 @@ export const departmentCoverage = (
   coverage(department, employees, date, (id) => absenceOn(absences, id, date) !== null);
 
 /**
- * Рабочие дни, в которые покрытие подразделения упадёт ниже порога, если заявку согласуют.
+ * Покрытие подразделения по рабочим дням заявки — как если бы её согласовали.
  * Учитываются согласованные отсутствия и чужие заявки на согласовании — руководитель
  * видит конфликт до того, как одобрит обе.
  */
-export const coverageConflicts = (
+export const requestCoverage = (
   calendar: CalendarIndex,
   department: IDepartment,
   employees: IEmployee[],
@@ -219,6 +219,17 @@ export const coverageConflicts = (
         date,
         (id) => id === request.employeeId || absenceOn(others, id, date, isPlannedAbsence) !== null,
       ),
-    )
-    .filter((day) => day.isBelowThreshold);
+    );
 };
+
+/** Рабочие дни, в которые покрытие подразделения упадёт ниже порога, если заявку согласуют */
+export const coverageConflicts = (
+  calendar: CalendarIndex,
+  department: IDepartment,
+  employees: IEmployee[],
+  absences: IAbsence[],
+  request: { id?: string; employeeId: string; period: IClosedPeriod },
+): ICoverage[] =>
+  requestCoverage(calendar, department, employees, absences, request).filter(
+    (day) => day.isBelowThreshold,
+  );

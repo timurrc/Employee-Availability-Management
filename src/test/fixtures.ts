@@ -19,6 +19,8 @@ export const makeEmployee = (id: string, extra: Partial<IEmployee> = {}): IEmplo
   role: "employee",
   hoursPerDay: 8,
   email: `${id}@example.com`,
+  hireDate: "2020-01-01",
+  vacationCarryover: 0,
   ...extra,
 });
 

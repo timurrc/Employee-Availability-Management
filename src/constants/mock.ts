@@ -94,8 +94,25 @@ const EMPLOYEE_ROWS: EmployeeRow[] = [
   ["e30", "Степанова Ксения Ильинична", "Менеджер по продажам", "d-sales", "e29", "employee"],
 ];
 
+/**
+ * Дата приёма и остаток отпуска прошлых лет. Дата приёма фиксирована (не «от сегодня»):
+ * рабочий год и начисление считаются от неё. Кого нет в списке — принят 01.02.2021, остатка нет.
+ */
+const HIRING: Record<string, [hireDate: ISODate, carryover: number]> = {
+  e01: ["2015-04-01", 0],
+  e04: ["2018-09-03", 6],
+  e19: ["2019-06-17", 4],
+  e20: ["2020-02-10", 3],
+  e21: ["2023-03-13", 20],
+  e22: ["2022-08-01", 0],
+  e23: ["2024-01-15", 2],
+  e24: ["2021-10-04", 7],
+  e26: ["2025-09-01", 0],
+};
+
 export const MOCK_EMPLOYEES: IEmployee[] = EMPLOYEE_ROWS.map(
   ([id, fullName, position, departmentId, deputyId, role]) => {
+    const [hireDate, vacationCarryover] = HIRING[id] ?? ["2021-02-01", 0];
     const headId = MOCK_DEPARTMENTS.find((d) => d.id === departmentId)!.headId;
     return {
       id,
@@ -107,6 +124,8 @@ export const MOCK_EMPLOYEES: IEmployee[] = EMPLOYEE_ROWS.map(
       role,
       hoursPerDay: 8,
       email: `${id}@company.example`,
+      hireDate,
+      vacationCarryover,
     };
   },
 );
@@ -174,9 +193,21 @@ export const MOCK_ABSENCES: IAbsence[] = [
   absence("a10", "e21", "vacation", 20, 33, "pending"),
   absence("a11", "e23", "vacation", 21, 30, "pending"),
   absence("a12", "e24", "vacation", 30, 43, "pending"),
+  // Согласован раньше — вместе с заявками выше роняет покрытие ИТ ниже порога
+  absence("a20", "e26", "vacation", 28, 35, "approved", {
+    decision: { byId: "e19", at: fromToday(-10) },
+  }),
   absence("a13", "e16", "vacation", 45, 58, "draft"),
   absence("a14", "e28", "vacation", 10, 16, "rejected", {
-    comment: "Пересекается с закрытием квартала",
+    decision: { byId: "e27", at: fromToday(-2), reason: "Пересекается с закрытием квартала" },
+  }),
+  // История сотрудника e21 (демо-аккаунт «Сотрудник»): согласованный в прошлом и отклонённый
+  absence("a18", "e21", "vacation", -120, -107, "approved", {
+    decision: { byId: "e19", at: fromToday(-150) },
+  }),
+  absence("a19", "e21", "vacation", 60, 66, "rejected", {
+    comment: "Поездка с семьёй",
+    decision: { byId: "e19", at: fromToday(-5), reason: "Сдача проекта" },
   }),
   // Прошедшие
   absence("a15", "e11", "vacation", -40, -27, "approved"),

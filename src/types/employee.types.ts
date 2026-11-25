@@ -21,4 +21,8 @@ export interface IEmployee {
   /** Норма часов в обычный рабочий день (график 5/2) */
   hoursPerDay: number;
   email: string;
+  /** Дата приёма — от неё считается рабочий год и начисление отпуска */
+  hireDate: string;
+  /** Неиспользованный ежегодный отпуск прошлых рабочих лет, дней */
+  vacationCarryover: number;
 }

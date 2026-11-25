@@ -5,6 +5,7 @@ import {
   absenceOn,
   availableFrom,
   coverageConflicts,
+  requestCoverage,
   departmentCoverage,
   resolveDeputy,
   statusOn,
@@ -243,5 +244,16 @@ describe("покрытие подразделения", () => {
         period: { start: "2026-12-01", end: "2026-12-04" },
       }),
     ).toEqual([]);
+  });
+
+  it("requestCoverage: все рабочие дни заявки, выходные пропускаются", () => {
+    const days = requestCoverage(CALENDAR, department, employees, [], {
+      employeeId: "e4",
+      period: { start: "2026-12-04", end: "2026-12-07" },
+    });
+    expect(days.map((d) => [d.date, d.available])).toEqual([
+      ["2026-12-04", 4],
+      ["2026-12-07", 4],
+    ]);
   });
 });

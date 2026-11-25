@@ -10,7 +10,7 @@ import type { IDepartment, IEmployee } from "@/types/employee.types";
  * переживало перезагрузку. Знают о ней только хендлеры MSW — сервисы и UI нет.
  * Поменял форму данных — подними версию в ключе, старый снимок будет проигнорирован.
  */
-const STORAGE_KEY = "eam:db:v1";
+const STORAGE_KEY = "eam:db:v2";
 
 export interface IDb {
   departments: IDepartment[];
