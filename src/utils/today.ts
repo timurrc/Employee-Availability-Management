@@ -15,7 +15,7 @@ import {
 import { groupConsecutiveDays, routeDeadlines } from "@/core/deadline";
 import { containsDate } from "@/core/period";
 import { ABSENCE_META } from "@/constants/absence";
-import type { IAbsence } from "@/types/absence.types";
+import type { IAbsence, IDelegation } from "@/types/absence.types";
 import type { IPersonStatus } from "@/types/availability.types";
 import type { ISODate } from "@/types/common.types";
 import type { IDocument } from "@/types/document.types";
@@ -264,6 +264,8 @@ export interface IPendingAction {
     | { page: "sick-leaves" }
     | { page: "team"; departmentId: string }
     | { page: "document"; id: string };
+  /** «Передать заместителю» выполняется прямо в строке, без перехода */
+  delegate?: { documentId: string; stepId: string; toId: string };
 }
 
 interface IActionsContext {
@@ -274,6 +276,7 @@ interface IActionsContext {
   departments: IDepartment[];
   absences: IAbsence[];
   documents: IDocument[];
+  delegations?: IDelegation[];
   today: ISODate;
 }
 
@@ -295,6 +298,7 @@ export const pendingActions = ({
   departments,
   absences,
   documents,
+  delegations,
   today,
 }: IActionsContext): IPendingAction[] => {
   const actions: IPendingAction[] = [];
@@ -332,7 +336,9 @@ export const pendingActions = ({
     if (document.authorId !== userId) continue;
     const index = document.steps.findIndex((s) => s.status === "in_progress");
     const step = document.steps[index];
-    const deadline = routeDeadlines(calendar, document, { employees, absences })[index];
+    const deadline = routeDeadlines(calendar, document, { employees, absences, delegations })[
+      index
+    ];
     if (!step || !deadline || step.delegatedToId) continue;
     if (deadline.risk !== "delegated" && deadline.risk !== "no_deputy") continue;
     const who = nameOf(employees, step.approverId);
@@ -345,6 +351,14 @@ export const pendingActions = ({
           : `${document.number}: ${who} отсутствует, этап стоит`,
       actionLabel: deadline.risk === "no_deputy" ? "Открыть" : "Передать заместителю",
       target: { page: "document", id: document.id },
+      ...(deadline.resolution.status === "deputy" &&
+        deadline.resolution.actorId && {
+          delegate: {
+            documentId: document.id,
+            stepId: step.id,
+            toId: deadline.resolution.actorId,
+          },
+        }),
     });
   }
 

@@ -1,7 +1,11 @@
 import { useMemo, useState } from "react";
 import { getDay, nextWorkingDay } from "@/core/calendar";
 import { useAvailability } from "@/hooks/useAvailability";
-import { useDocuments } from "@/hooks/useDocuments";
+import { toast } from "sonner";
+import { UNDO_TOAST_MS } from "@/constants/vacation";
+import { useDocuments, usePatchStep } from "@/hooks/useDocuments";
+import { shortName } from "@/utils/availability";
+import type { IPendingAction } from "@/utils/today";
 import { useDepartments } from "@/hooks/useEmployees";
 import { useAuthStore } from "@/store/auth.store";
 import { todayISO } from "@/utils/date";
@@ -23,7 +27,9 @@ export const useHomePage = () => {
   const availability = useAvailability();
   const departmentsQuery = useDepartments();
   const documentsQuery = useDocuments();
-  const { calendar, employees, absences, statusOf, employeeById } = availability;
+  const { calendar, employees, absences, delegations, statusOf, employeeById } = availability;
+  const patchStep = usePatchStep();
+  const [delegatingId, setDelegatingId] = useState<string | null>(null);
 
   const today = todayISO();
   const day = getDay(calendar, today);
@@ -82,10 +88,11 @@ export const useHomePage = () => {
             departments,
             absences,
             documents,
+            delegations,
             today,
           })
         : [],
-    [user, role, calendar, employees, departments, absences, documents, today],
+    [user, role, calendar, employees, departments, absences, documents, delegations, today],
   );
 
   const events = useMemo(
@@ -100,7 +107,32 @@ export const useHomePage = () => {
 
   const absentEmployee = next ? employeeById(next.employeeId) : undefined;
 
+  /** «Передать заместителю» прямо из «Ждут вашего действия», с «Отменить» в тосте */
+  const delegate = async (action: IPendingAction) => {
+    if (!action.delegate) return;
+    const { documentId, stepId, toId } = action.delegate;
+    setDelegatingId(action.id);
+    try {
+      await patchStep.mutateAsync({ id: documentId, stepId, dto: { delegatedToId: toId } });
+      const deputy = employeeById(toId);
+      toast.success(`Этап передан: ${deputy ? shortName(deputy.fullName) : "заместителю"}`, {
+        duration: UNDO_TOAST_MS,
+        action: {
+          label: "Отменить",
+          onClick: () =>
+            void patchStep.mutate({ id: documentId, stepId, dto: { delegatedToId: null } }),
+        },
+      });
+    } catch {
+      toast.error("Не удалось передать этап — повторите");
+    } finally {
+      setDelegatingId(null);
+    }
+  };
+
   return {
+    delegate: (action: IPendingAction) => void delegate(action),
+    delegatingId,
     user,
     role,
     today,

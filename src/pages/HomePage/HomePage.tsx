@@ -84,7 +84,11 @@ const HomePage = () => {
           <Rows count={2} />
         </Card>
       ) : (
-        <TodayActions actions={page.actions} />
+        <TodayActions
+          actions={page.actions}
+          onDelegate={page.delegate}
+          delegatingId={page.delegatingId}
+        />
       )}
 
       <Card

@@ -165,6 +165,7 @@ describe("pendingActions", () => {
       kind: "stuck_document",
       text: "Д-142: Егорова К. отсутствует, этап стоит",
       actionLabel: "Передать заместителю",
+      delegate: { documentId: "doc1", stepId: "s1", toId: expect.any(String) },
     });
   });
 

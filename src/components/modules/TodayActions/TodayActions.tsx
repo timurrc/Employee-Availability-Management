@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import Button from "@/components/ui/Button/Button";
 import Card from "@/components/ui/Card/Card";
 import { buildPath, ROUTES, withQuery } from "@/constants/routes";
 import { TONE_CLASSES, type Tone } from "@/constants/tones";
@@ -40,10 +41,13 @@ const hrefOf = ({ target }: IPendingAction) => {
 
 interface TodayActionsProps {
   actions: IPendingAction[];
+  /** Выполнить действие на месте (передать этап заместителю) */
+  onDelegate?: (action: IPendingAction) => void;
+  delegatingId?: string | null;
 }
 
 /** «Ждут вашего действия»: строка = одно действие. Нечего делать — блока нет. */
-const TodayActions = ({ actions }: TodayActionsProps) => {
+const TodayActions = ({ actions, onDelegate, delegatingId }: TodayActionsProps) => {
   const [expanded, setExpanded] = useState(false);
   if (actions.length === 0) return null;
 
@@ -51,7 +55,7 @@ const TodayActions = ({ actions }: TodayActionsProps) => {
   const hidden = actions.length - visible.length;
 
   return (
-    <Card title="Ждут вашего действия" flush>
+    <Card title="Ждут вашего действия" aria-label="Ждут вашего действия" flush>
       <ul className="divide-y divide-[var(--color-border)] border-t border-[var(--color-border)]">
         {visible.map((action) => {
           const { icon: Icon, tone } = KIND_META[action.kind];
@@ -63,13 +67,32 @@ const TodayActions = ({ actions }: TodayActionsProps) => {
                 aria-hidden
               />
               <p className="min-w-0 flex-1">{action.text}</p>
-              <Link
-                to={hrefOf(action)}
-                className="inline-flex items-center gap-1 text-sm font-medium text-[var(--color-primary)] hover:underline"
-              >
-                {action.actionLabel}
-                <ArrowRight className="size-3.5" aria-hidden />
-              </Link>
+              {action.delegate && onDelegate ? (
+                <span className="flex items-center gap-3">
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    isLoading={delegatingId === action.id}
+                    onClick={() => onDelegate(action)}
+                  >
+                    {action.actionLabel}
+                  </Button>
+                  <Link
+                    to={hrefOf(action)}
+                    className="text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:underline"
+                  >
+                    Открыть
+                  </Link>
+                </span>
+              ) : (
+                <Link
+                  to={hrefOf(action)}
+                  className="inline-flex items-center gap-1 text-sm font-medium text-[var(--color-primary)] hover:underline"
+                >
+                  {action.actionLabel}
+                  <ArrowRight className="size-3.5" aria-hidden />
+                </Link>
+              )}
             </li>
           );
         })}
