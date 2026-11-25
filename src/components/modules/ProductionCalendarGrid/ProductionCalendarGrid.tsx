@@ -33,7 +33,7 @@ const dayClass = (day: ICalendarDay) =>
   day.kind === "holiday"
     ? "bg-[var(--color-cal-holiday-bg)] text-[var(--color-cal-holiday)] font-medium"
     : day.kind === "weekend"
-      ? "bg-[var(--color-cal-weekend-bg)] text-[var(--color-text-subtle)]"
+      ? "bg-[var(--color-cal-weekend-bg)] text-[var(--color-text-muted)]"
       : "text-[var(--color-text)]";
 
 /**
@@ -122,13 +122,12 @@ const ProductionCalendarGrid = ({
                             )}
                           >
                             {Number(day.date.slice(8))}
+                            {/* Пометка — псевдоэлементом: в aria-label уже есть «сокращённый» (WCAG 2.5.3) */}
                             {day.isShortened && (
                               <span
-                                className="absolute top-0 right-0.5 text-[10px] leading-none text-[var(--color-warning)]"
+                                className="absolute top-0 right-0.5 text-[10px] leading-none text-[var(--color-warning)] before:content-['−1']"
                                 aria-hidden
-                              >
-                                −1
-                              </span>
+                              />
                             )}
                             {day.isTransfer && (
                               <ArrowLeftRight

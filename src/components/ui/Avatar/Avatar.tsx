@@ -22,20 +22,20 @@ interface AvatarProps {
 
 /**
  * Инициалы в круге. Кольцо и точка — дополнительные сигналы: рядом всегда есть текст статуса,
- * поэтому аватар скрыт от скринридеров.
+ * поэтому аватар скрыт от скринридеров. Инициалы рисуются через ::before, а не текстом:
+ * иначе они попадают в видимую подпись кнопки и расходятся с её aria-label (WCAG 2.5.3).
  */
 const Avatar = ({ name, size = "md", ring, soon, className }: AvatarProps) => {
   return (
     <span className={cn("relative inline-flex shrink-0", className)} aria-hidden>
       <span
+        data-initials={initials(name)}
         className={cn(
-          "inline-flex items-center justify-center rounded-full bg-[var(--color-surface-2)] font-medium text-[var(--color-text-muted)]",
+          "inline-flex items-center justify-center rounded-full bg-[var(--color-surface-2)] font-medium text-[var(--color-text-muted)] before:content-[attr(data-initials)]",
           SIZES[size],
           ring && ["border-2", TONE_CLASSES[ring].border],
         )}
-      >
-        {initials(name)}
-      </span>
+      />
       {soon && (
         <span className="absolute -top-0.5 -right-0.5 size-2.5 rounded-full border-2 border-[var(--color-elevated)] bg-[var(--color-warning)]" />
       )}

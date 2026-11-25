@@ -32,7 +32,7 @@ const LoginPage = () => {
                 type="button"
                 onClick={() => onSelect(employeeId)}
                 disabled={Boolean(pendingId) || isLoading}
-                aria-label={`${label}${name ? `: ${name}` : ""}`}
+                aria-describedby={`login-hint-${employeeId}`}
                 className="flex min-h-16 w-full cursor-pointer items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-[var(--color-surface-2)] disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {name ? (
@@ -41,6 +41,8 @@ const LoginPage = () => {
                   <Skeleton className="size-10 shrink-0 rounded-full" />
                 )}
                 <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                  {/* Имя кнопки — из видимого текста (WCAG 2.5.3): «Руководитель: ФИО · должность» */}
+                  <span className="sr-only">{label}: </span>
                   {name ? (
                     <span className="truncate font-medium">
                       {name}
@@ -52,9 +54,15 @@ const LoginPage = () => {
                   ) : (
                     <Skeleton className="h-4 w-48" />
                   )}
-                  <span className="text-sm text-[var(--color-text-muted)]">{hint}</span>
+                  <span
+                    id={`login-hint-${employeeId}`}
+                    className="text-sm text-[var(--color-text-muted)]"
+                    aria-hidden
+                  >
+                    {hint}
+                  </span>
                 </span>
-                <Badge tone="neutral" className="hidden sm:inline-flex">
+                <Badge tone="neutral" className="hidden sm:inline-flex" aria-hidden>
                   {label}
                 </Badge>
                 {pendingId === employeeId ? (

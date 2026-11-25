@@ -87,7 +87,7 @@ const AccountSwitcher = ({ compact = false, compactOnTablet = false }: AccountSw
         aria-haspopup="menu"
         aria-expanded={open}
         aria-controls={open ? menuId : undefined}
-        aria-label={`Учётная запись: ${user.name}, ${roleLabel}`}
+        aria-label={`Учётная запись: ${user.name}, ${roleLabel} · демо`}
         title={compact ? `${user.name} · ${roleLabel}` : undefined}
         onClick={() => setOpen((value) => !value)}
         className={cn(
@@ -105,6 +105,7 @@ const AccountSwitcher = ({ compact = false, compactOnTablet = false }: AccountSw
         )}
         <span className={cn("flex min-w-0 flex-1 flex-col", hideText)}>
           <span className="truncate font-medium">{user.name}</span>
+          {/* Пробел между строками: иначе в тексте кнопки «…вичРуководитель» не совпадает с aria-label */}{" "}
           <span className="truncate text-sm text-[var(--color-text-muted)]">
             {roleLabel} · демо
           </span>
