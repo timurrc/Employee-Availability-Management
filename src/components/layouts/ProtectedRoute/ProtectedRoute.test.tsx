@@ -1,5 +1,5 @@
 import { screen } from "@testing-library/react";
-import { Route, Routes } from "react-router-dom";
+import { Route, Routes, useLocation } from "react-router-dom";
 import { beforeEach, describe, expect, it } from "vitest";
 import { ROUTES } from "@/constants/routes";
 import { useAuthStore } from "@/store/auth.store";
@@ -23,6 +23,23 @@ describe("ProtectedRoute", () => {
   it("без токена уводит на логин", () => {
     renderRoutes();
     expect(screen.getByText("login")).toBeInTheDocument();
+  });
+
+  it("на логин передаёт исходный адрес вместе с query", () => {
+    const Login = () => {
+      const location = useLocation();
+      return <p>from: {(location.state as { from: string }).from}</p>;
+    };
+    renderWithProviders(
+      <Routes>
+        <Route path={ROUTES.LOGIN} element={<Login />} />
+        <Route element={<ProtectedRoute />}>
+          <Route path={ROUTES.DOCUMENTS} element={<p>documents</p>} />
+        </Route>
+      </Routes>,
+      { route: "/documents?tab=all&type=contract" },
+    );
+    expect(screen.getByText("from: /documents?tab=all&type=contract")).toBeInTheDocument();
   });
 
   it("гостевой роут после входа уводит на state.from", () => {
