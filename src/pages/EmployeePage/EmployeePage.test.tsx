@@ -1,4 +1,4 @@
-import { screen } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Route, Routes } from "react-router-dom";
 import { beforeEach, describe, expect, it } from "vitest";
@@ -57,5 +57,52 @@ describe("EmployeePage", () => {
     renderAt("e999");
     expect(await screen.findByText("Сотрудник не найден")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "К списку команды" })).toHaveAttribute("href", "/team");
+  });
+
+  it("HR меняет постоянного заместителя: вариант с циклом недоступен", async () => {
+    useAuthStore
+      .getState()
+      .setAuth(MOCK_TOKEN, { id: "e16", name: "Демо", position: "—", role: "hr" });
+    renderAt("e05");
+    await userEvent.click(await screen.findByRole("button", { name: "Изменить" }));
+    const dialog = screen.getByRole("dialog", { name: "Постоянный заместитель" });
+    const cycle = within(dialog).getByRole("option", {
+      name: /создаст цикл: Громов П\. → Никитина О\./,
+    });
+    expect(cycle).toBeDisabled();
+    await userEvent.selectOptions(within(dialog).getByLabelText("Заместитель"), "e08");
+    await userEvent.click(within(dialog).getByRole("button", { name: "Сохранить" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    expect(screen.getByText("Постоянный заместитель:").parentElement).toHaveTextContent("Орлов");
+  });
+
+  it("назначить замещение на период и снять его", async () => {
+    useAuthStore
+      .getState()
+      .setAuth(MOCK_TOKEN, { id: "e16", name: "Демо", position: "—", role: "hr" });
+    renderAt("e05");
+    await userEvent.click(await screen.findByRole("button", { name: "Назначить на период" }));
+    const dialog = screen.getByRole("dialog", { name: "Назначить замещение на период" });
+    await userEvent.click(within(dialog).getByRole("button", { name: "Назначить" }));
+    expect(within(dialog).getByText("Выберите, кто замещает")).toBeInTheDocument();
+    await userEvent.selectOptions(within(dialog).getByLabelText("Кто замещает"), "e08");
+    await userEvent.click(within(dialog).getByRole("button", { name: "Назначить" }));
+    const list = await screen.findByRole("list", { name: "Замещения на период" });
+    expect(list).toHaveTextContent(/замещает Орлов К\./);
+    expect(screen.getByText("Замещает:")).toBeInTheDocument();
+    await userEvent.click(within(list).getByRole("button", { name: "Снять" }));
+    await waitFor(() =>
+      expect(screen.queryByRole("list", { name: "Замещения на период" })).toBeNull(),
+    );
+  });
+
+  it("сотрудник без прав не видит «Изменить» у чужой карточки", async () => {
+    useAuthStore
+      .getState()
+      .setAuth(MOCK_TOKEN, { id: "e21", name: "Демо", position: "—", role: "employee" });
+    renderAt("e05");
+    await screen.findByRole("heading", { name: "Никитина Ольга Игоревна" });
+    expect(screen.queryByRole("button", { name: "Изменить" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Назначить на период" })).toBeNull();
   });
 });

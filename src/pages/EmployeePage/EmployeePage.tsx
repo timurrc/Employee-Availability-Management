@@ -1,6 +1,8 @@
 import { ChevronLeft, Mail, UserRoundSearch } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import AbsenceHistory from "@/components/modules/AbsenceHistory/AbsenceHistory";
+import DelegationDialog from "@/components/modules/DelegationDialog/DelegationDialog";
+import DeputyDialog from "@/components/modules/DeputyDialog/DeputyDialog";
 import EmployeeNow from "@/components/modules/EmployeeNow/EmployeeNow";
 import PersonChip from "@/components/modules/PersonChip/PersonChip";
 import VacationBalance from "@/components/modules/VacationBalance/VacationBalance";
@@ -118,6 +120,11 @@ const EmployeePage = () => {
           next={page.next}
           employeeById={page.employeeById}
           canSeeEln={page.canSeeEln}
+          delegations={page.delegations}
+          onChangeDeputy={page.openDeputy}
+          onDelegate={page.openDelegation}
+          onRemoveDelegation={page.removeDelegation}
+          removingId={page.removingId}
         />
       )}
 
@@ -168,6 +175,20 @@ const EmployeePage = () => {
       )}
 
       {page.documentsState.isError && <ErrorState compact what="документы" />}
+
+      {page.dialog === "deputy" && (
+        <DeputyDialog employee={employee} employees={page.employees} onClose={page.closeDialog} />
+      )}
+      {page.dialog === "delegation" && (
+        <DelegationDialog
+          employee={employee}
+          employees={page.employees}
+          createdById={page.viewerId}
+          today={today}
+          initial={page.delegationInitial}
+          onClose={page.closeDialog}
+        />
+      )}
     </div>
   );
 };

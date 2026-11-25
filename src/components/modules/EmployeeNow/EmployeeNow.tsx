@@ -1,18 +1,21 @@
 import { format } from "date-fns";
 import { ru } from "date-fns/locale/ru";
-import { CircleCheck, TriangleAlert } from "lucide-react";
+import { CircleCheck, TriangleAlert, UserRoundCog } from "lucide-react";
+import type { ReactNode } from "react";
 import DeputyHint from "@/components/modules/DeputyHint/DeputyHint";
 import PersonChip from "@/components/modules/PersonChip/PersonChip";
 import Badge from "@/components/ui/Badge/Badge";
+import Button from "@/components/ui/Button/Button";
 import Card from "@/components/ui/Card/Card";
 import { fromISODate } from "@/core/calendar";
 import { ABSENCE_META } from "@/constants/absence";
-import type { IAbsence } from "@/types/absence.types";
+import type { IAbsence, IDelegation } from "@/types/absence.types";
 import type { IPersonStatus } from "@/types/availability.types";
 import type { ICalendarDay } from "@/types/calendar.types";
 import type { ISODate } from "@/types/common.types";
 import type { IEmployee } from "@/types/employee.types";
-import { formatDay } from "@/utils/date";
+import { shortName } from "@/utils/availability";
+import { formatDay, formatPeriod } from "@/utils/date";
 
 interface EmployeeNowProps {
   status: IPersonStatus;
@@ -27,7 +30,20 @@ interface EmployeeNowProps {
   next: IAbsence | null;
   employeeById: (id: string) => IEmployee | undefined;
   canSeeEln: boolean;
+  /** Ручные замещения на период — действующие и будущие */
+  delegations?: IDelegation[];
+  /** «Изменить» постоянного заместителя — сам сотрудник, руководитель, HR */
+  onChangeDeputy?: () => void;
+  /** «Назначить на период» — руководитель, HR */
+  onDelegate?: () => void;
+  onRemoveDelegation?: (delegation: IDelegation) => void;
+  /** Какое замещение сейчас снимается */
+  removingId?: string | null;
 }
+
+const Actions = ({ children }: { children: ReactNode }) => (
+  <span className="ml-auto flex flex-wrap gap-1">{children}</span>
+);
 
 const weekday = (date: ISODate) => format(fromISODate(date), "EEEE", { locale: ru });
 
@@ -43,6 +59,11 @@ const EmployeeNow = ({
   next,
   employeeById,
   canSeeEln,
+  delegations = [],
+  onChangeDeputy,
+  onDelegate,
+  onRemoveDelegation,
+  removingId,
 }: EmployeeNowProps) => {
   const { absence } = status.availability;
   const meta = absence ? ABSENCE_META[absence.type] : null;
@@ -93,7 +114,19 @@ const EmployeeNow = ({
           </p>
         )}
 
-        {absence && <DeputyHint resolution={status.deputy} employeeById={employeeById} />}
+        {(absence || status.deputy.status !== "self") && (
+          <DeputyHint
+            resolution={status.deputy}
+            employeeById={employeeById}
+            emptyAction={
+              onDelegate && (
+                <Button size="sm" variant="secondary" onClick={onDelegate}>
+                  Назначить на период
+                </Button>
+              )
+            }
+          />
+        )}
 
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-[var(--color-border)] pt-3">
           {permanentDeputy ? (
@@ -105,6 +138,18 @@ const EmployeeNow = ({
                 variant="inline"
                 date={statusDate}
               />
+              <Actions>
+                {onChangeDeputy && (
+                  <Button size="sm" variant="ghost" onClick={onChangeDeputy}>
+                    Изменить
+                  </Button>
+                )}
+                {onDelegate && !absence && (
+                  <Button size="sm" variant="ghost" onClick={onDelegate}>
+                    Назначить на период
+                  </Button>
+                )}
+              </Actions>
             </>
           ) : (
             <div className="flex w-full flex-wrap items-center gap-2 rounded-[var(--radius-md)] bg-[var(--color-warning-bg)] px-3 py-2">
@@ -112,9 +157,45 @@ const EmployeeNow = ({
               <p className="flex-1">
                 Постоянный заместитель не назначен — при отсутствии документы будут ждать
               </p>
+              {onChangeDeputy && (
+                <Button size="sm" variant="secondary" onClick={onChangeDeputy}>
+                  Назначить
+                </Button>
+              )}
             </div>
           )}
         </div>
+
+        {delegations.length > 0 && (
+          <ul className="flex flex-col gap-1.5" aria-label="Замещения на период">
+            {delegations.map((delegation) => {
+              const deputy = employeeById(delegation.toId);
+              return (
+                <li key={delegation.id} className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                  <UserRoundCog
+                    className="size-4 shrink-0 text-[var(--color-text-muted)]"
+                    aria-hidden
+                  />
+                  <span>
+                    {formatPeriod(delegation.period, today)} замещает{" "}
+                    {deputy ? shortName(deputy.fullName) : "сотрудник"}
+                    <span className="text-[var(--color-text-muted)]"> · назначено вручную</span>
+                  </span>
+                  {onRemoveDelegation && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      isLoading={removingId === delegation.id}
+                      onClick={() => onRemoveDelegation(delegation)}
+                    >
+                      Снять
+                    </Button>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        )}
       </div>
     </Card>
   );
