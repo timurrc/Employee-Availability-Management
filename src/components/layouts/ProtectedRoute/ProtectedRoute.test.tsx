@@ -11,10 +11,10 @@ const renderRoutes = () =>
     <Routes>
       <Route path={ROUTES.LOGIN} element={<p>login</p>} />
       <Route element={<ProtectedRoute />}>
-        <Route path={ROUTES.PROFILE} element={<p>profile</p>} />
+        <Route path={ROUTES.TEAM} element={<p>team</p>} />
       </Route>
     </Routes>,
-    { route: ROUTES.PROFILE },
+    { route: ROUTES.TEAM },
   );
 
 describe("ProtectedRoute", () => {
@@ -32,16 +32,32 @@ describe("ProtectedRoute", () => {
         <Route element={<ProtectedRoute mode="guest" />}>
           <Route path={ROUTES.LOGIN} element={<p>login</p>} />
         </Route>
-        <Route path={ROUTES.PROFILE} element={<p>profile</p>} />
+        <Route path={ROUTES.TEAM} element={<p>team</p>} />
       </Routes>,
-      { route: { pathname: ROUTES.LOGIN, state: { from: ROUTES.PROFILE } } },
+      { route: { pathname: ROUTES.LOGIN, state: { from: ROUTES.TEAM } } },
     );
-    expect(screen.getByText("profile")).toBeInTheDocument();
+    expect(screen.getByText("team")).toBeInTheDocument();
   });
 
   it("с токеном пускает на страницу", () => {
     useAuthStore.getState().setToken("token");
     renderRoutes();
-    expect(screen.getByText("profile")).toBeInTheDocument();
+    expect(screen.getByText("team")).toBeInTheDocument();
+  });
+
+  it("роль не из списка уводит на главную", () => {
+    useAuthStore
+      .getState()
+      .setAuth("token", { id: "e21", name: "Demo", position: "Разработчик", role: "employee" });
+    renderWithProviders(
+      <Routes>
+        <Route path={ROUTES.HOME} element={<p>home</p>} />
+        <Route element={<ProtectedRoute roles={["hr"]} />}>
+          <Route path={ROUTES.SICK_LEAVES} element={<p>sick</p>} />
+        </Route>
+      </Routes>,
+      { route: ROUTES.SICK_LEAVES },
+    );
+    expect(screen.getByText("home")).toBeInTheDocument();
   });
 });

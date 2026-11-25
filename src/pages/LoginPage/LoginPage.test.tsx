@@ -12,40 +12,28 @@ const renderLogin = () =>
   renderWithProviders(
     <Routes>
       <Route path={ROUTES.LOGIN} element={<LoginPage />} />
-      <Route path={ROUTES.HOME} element={<p>home</p>} />
+      <Route path={ROUTES.TEAM} element={<p>team</p>} />
     </Routes>,
-    { route: ROUTES.LOGIN },
+    { route: { pathname: ROUTES.LOGIN, state: { from: ROUTES.TEAM } } },
   );
 
 describe("LoginPage", () => {
   beforeEach(() => useAuthStore.getState().logout());
 
-  it("показывает ошибки zod и не отправляет форму", async () => {
+  it("показывает учётную запись для каждой роли", () => {
     renderLogin();
-    await userEvent.click(screen.getByRole("button", { name: "Войти" }));
-
-    expect(await screen.findByText("Введите корректный email")).toBeInTheDocument();
-    expect(screen.getByText("Минимум 6 символов")).toBeInTheDocument();
-    expect(useAuthStore.getState().token).toBeNull();
+    for (const label of ["Сотрудник", "Руководитель", "Кадровик", "Администратор"]) {
+      expect(screen.getByRole("button", { name: new RegExp(label) })).toBeInTheDocument();
+    }
   });
 
-  it("логинит через API (MSW) и уводит на главную", async () => {
+  it("вход под руководителем сохраняет роль и ведёт на state.from", async () => {
     renderLogin();
-    await userEvent.type(screen.getByLabelText("Email"), "demo@example.com");
-    await userEvent.type(screen.getByLabelText("Пароль"), "password");
-    await userEvent.click(screen.getByRole("button", { name: "Войти" }));
+    await userEvent.click(screen.getByRole("button", { name: /Руководитель/ }));
 
-    expect(await screen.findByText("home")).toBeInTheDocument();
-    expect(useAuthStore.getState().token).toBe(MOCK_TOKEN);
-  });
-
-  it("показывает ошибку поля с бэкенда", async () => {
-    renderLogin();
-    await userEvent.type(screen.getByLabelText("Email"), "demo@example.com");
-    await userEvent.type(screen.getByLabelText("Пароль"), "wrongpass");
-    await userEvent.click(screen.getByRole("button", { name: "Войти" }));
-
-    expect(await screen.findByText("Неверный пароль")).toBeInTheDocument();
-    expect(useAuthStore.getState().token).toBeNull();
+    expect(await screen.findByText("team")).toBeInTheDocument();
+    const { token, user } = useAuthStore.getState();
+    expect(token).toBe(MOCK_TOKEN);
+    expect(user).toMatchObject({ id: "e19", role: "manager" });
   });
 });

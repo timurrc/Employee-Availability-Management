@@ -1,14 +1,17 @@
-import type { z } from "zod";
-import type { loginSchema } from "@/schemas/auth.schema";
+import type { Role } from "./employee.types";
 
 export interface IUser {
-  id: number;
+  /** id сотрудника — пользователь и сотрудник одно и то же */
+  id: string;
   name: string;
-  email: string;
+  position: string;
+  role: Role;
 }
 
-/** Тип выводится из zod-схемы формы */
-export type ILoginDto = z.infer<typeof loginSchema>;
+/** Демо-вход: выбор учётной записи вместо логина и пароля */
+export interface ILoginDto {
+  employeeId: string;
+}
 
 export interface IAuthResponse {
   accessToken: string;
