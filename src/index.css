@@ -86,6 +86,7 @@
 
   --shadow-pop: 0 4px 16px rgb(0 0 0 / 0.08), 0 1px 2px rgb(0 0 0 / 0.06);
   --shadow-modal: 0 16px 48px rgb(0 0 0 / 0.16);
+  --color-overlay: rgb(0 0 0 / 0.32); /* подложка под шитом и модалкой */
 
   /* Размеры каркаса */
   --sidebar-w: 240px;
@@ -138,6 +139,7 @@
     --color-cal-today: #7aa2ff;
     --shadow-pop: 0 4px 16px rgb(0 0 0 / 0.5), 0 0 0 1px #2a2a2f;
     --shadow-modal: 0 16px 48px rgb(0 0 0 / 0.6), 0 0 0 1px #2a2a2f;
+    --color-overlay: rgb(0 0 0 / 0.6);
   }
 }
 
@@ -183,6 +185,7 @@
   --color-cal-today: #7aa2ff;
   --shadow-pop: 0 4px 16px rgb(0 0 0 / 0.5), 0 0 0 1px #2a2a2f;
   --shadow-modal: 0 16px 48px rgb(0 0 0 / 0.6), 0 0 0 1px #2a2a2f;
+  --color-overlay: rgb(0 0 0 / 0.6);
 }
 
 @layer base {
