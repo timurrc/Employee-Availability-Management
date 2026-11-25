@@ -1,4 +1,4 @@
-import { isActiveAbsence, sickLeaveVacationOverlaps } from "@/core/absence";
+import { isActiveAbsence } from "@/core/absence";
 import {
   availableFrom,
   departmentCoverage,
@@ -22,6 +22,7 @@ import type { IDocument } from "@/types/document.types";
 import type { IDepartment, IEmployee, Role } from "@/types/employee.types";
 import { shortName } from "./availability";
 import { formatDay, formatPeriod, plural } from "./date";
+import { unresolvedOverlaps } from "./sickLeave";
 
 type StatusOf = (employeeId: string, date: ISODate) => IPersonStatus;
 
@@ -350,7 +351,7 @@ export const pendingActions = ({
   if (role === "hr") {
     const sick = absences.filter((a) => a.type === "sick" && isActiveAbsence(a));
     for (const leave of sick) {
-      if (sickLeaveVacationOverlaps(calendar, leave, absences).length === 0) continue;
+      if (unresolvedOverlaps(calendar, leave, absences, today).length === 0) continue;
       actions.push({
         id: `sick-overlap-${leave.id}`,
         kind: "sick_overlap",
