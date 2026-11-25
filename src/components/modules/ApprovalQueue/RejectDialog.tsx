@@ -10,13 +10,21 @@ import type { IRejectForm } from "@/types/absence.types";
 interface RejectDialogProps {
   /** «Петров А. · 20–28 февр.» */
   subject: string;
+  /** Заголовок диалога: по умолчанию «Отклонить заявку» */
+  title?: string;
   isPending: boolean;
   onConfirm: (reason: string) => void;
   onClose: () => void;
 }
 
-/** Отклонение заявки — с обязательной причиной: сотрудник её увидит */
-const RejectDialog = ({ subject, isPending, onConfirm, onClose }: RejectDialogProps) => {
+/** Отклонение заявки или документа — с обязательной причиной: автор её увидит */
+const RejectDialog = ({
+  subject,
+  title = "Отклонить заявку",
+  isPending,
+  onConfirm,
+  onClose,
+}: RejectDialogProps) => {
   const { register, handleSubmit, setValue, formState } = useForm<IRejectForm>({
     resolver: zodResolver(rejectSchema),
     defaultValues: { reason: "" },
@@ -24,7 +32,7 @@ const RejectDialog = ({ subject, isPending, onConfirm, onClose }: RejectDialogPr
 
   return (
     <Modal
-      title="Отклонить заявку"
+      title={title}
       description={subject}
       onClose={onClose}
       footer={
