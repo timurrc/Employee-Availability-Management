@@ -1,15 +1,21 @@
+import { MapPinOff } from "lucide-react";
 import { Link } from "react-router-dom";
+import EmptyState from "@/components/ui/EmptyState/EmptyState";
 import { ROUTES } from "@/constants/routes";
 
 const NotFoundPage = () => {
   return (
-    <section className="flex flex-col items-center gap-4 py-16 text-center">
-      <h1 className="text-5xl font-medium">404</h1>
-      <p className="text-[var(--color-muted)]">Страница не найдена</p>
-      <Link to={ROUTES.HOME} className="text-[var(--color-primary)]">
-        На главную
-      </Link>
-    </section>
+    <EmptyState
+      icon={MapPinOff}
+      title="Страница не найдена"
+      description="Возможно, ссылка устарела. Главное — на экране «Сегодня»."
+      action={
+        <Link to={ROUTES.HOME} className="font-medium text-[var(--color-primary)] hover:underline">
+          Открыть «Сегодня»
+        </Link>
+      }
+      className="py-20"
+    />
   );
 };
 

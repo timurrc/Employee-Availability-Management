@@ -4,7 +4,7 @@ import { useEmployeePage } from "./useEmployeePage";
 const EmployeePage = () => {
   const { employee, isPending, error } = useEmployeePage();
 
-  if (isPending) return <p className="text-[var(--color-muted)]">Загрузка…</p>;
+  if (isPending) return <p className="text-[var(--color-text-muted)]">Загрузка…</p>;
   if (error || !employee) return <p className="text-[var(--color-danger)]">{error?.message}</p>;
 
   return (

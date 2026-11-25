@@ -6,35 +6,43 @@ import { cn } from "@/utils/cn";
 interface InputProps extends ComponentProps<"input"> {
   label?: string;
   error?: string;
+  hint?: string;
 }
 
-const Input = ({ label, error, id, className, ...props }: InputProps) => {
+const Input = ({ label, error, hint, id, className, ...props }: InputProps) => {
   const generatedId = useId();
   const inputId = id ?? generatedId;
   const errorId = `${inputId}-error`;
+  const hintId = `${inputId}-hint`;
 
   return (
     <div className="flex flex-col gap-1.5">
       {label && (
-        <label htmlFor={inputId} className="text-sm text-[var(--color-muted)]">
+        <label htmlFor={inputId} className="text-sm font-medium text-[var(--color-text-muted)]">
           {label}
         </label>
       )}
       <input
         id={inputId}
         aria-invalid={Boolean(error)}
-        aria-describedby={error ? errorId : undefined}
+        aria-describedby={error ? errorId : hint ? hintId : undefined}
         className={cn(
-          "h-10 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] px-3 transition-colors outline-none focus:border-[var(--color-primary)]",
+          "h-9 rounded-[var(--radius-md)] border border-[var(--color-border-strong)] bg-[var(--color-bg)] px-3 transition-colors outline-none placeholder:text-[var(--color-text-subtle)] focus:border-[var(--color-focus)]",
           error && "border-[var(--color-danger)]",
           className,
         )}
         {...props}
       />
-      {error && (
+      {error ? (
         <span id={errorId} className="text-sm text-[var(--color-danger)]">
           {error}
         </span>
+      ) : (
+        hint && (
+          <span id={hintId} className="text-sm text-[var(--color-text-muted)]">
+            {hint}
+          </span>
+        )
       )}
     </div>
   );

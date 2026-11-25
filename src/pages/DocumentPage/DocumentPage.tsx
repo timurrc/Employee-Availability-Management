@@ -4,7 +4,7 @@ import { useDocumentPage } from "./useDocumentPage";
 const DocumentPage = () => {
   const { document, isPending, error } = useDocumentPage();
 
-  if (isPending) return <p className="text-[var(--color-muted)]">Загрузка…</p>;
+  if (isPending) return <p className="text-[var(--color-text-muted)]">Загрузка…</p>;
   if (error || !document) return <p className="text-[var(--color-danger)]">{error?.message}</p>;
 
   return (
