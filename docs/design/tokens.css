@@ -1,0 +1,222 @@
+/*
+  Дизайн-токены «Доступность» — готовый блок для src/index.css (Tailwind v4).
+  Описание и правила применения — docs/design/03-foundations.md.
+
+  Тема: по умолчанию системная (prefers-color-scheme); явный выбор пользователя —
+  атрибут data-theme="light" | "dark" на <html>. Контраст текстовых пар проверен (AA ≥ 4.5).
+
+  В классах: bg-[var(--color-surface)], text-[var(--color-text-muted)] и т.п.
+*/
+
+@theme static {
+  /* Нейтральная база */
+  --color-bg: #ffffff;
+  --color-surface: #f7f7f8; /* фон страницы под карточками, сайдбар */
+  --color-surface-2: #f0f0f2; /* hover строк, выходные в сетке */
+  --color-elevated: #ffffff; /* карточки, поповеры, модалки */
+  --color-border: #e4e4e7;
+  --color-border-strong: #d4d4d8;
+
+  --color-text: #18181b; /* 17.7:1 на bg */
+  --color-text-muted: #52525b; /* 7.7:1 */
+  --color-text-subtle: #71717a; /* 4.8:1 — только на bg/elevated, не на surface-2 */
+
+  /* Единственный акцент — главное действие, активный пункт, фокус, ссылка */
+  --color-primary: #2457d6; /* белый текст 6.2:1 */
+  --color-primary-hover: #1d47b3;
+  --color-primary-soft: #eef3fe; /* фон выбранного; текст primary 5.5:1 */
+  --color-on-primary: #ffffff;
+  --color-focus: #2457d6;
+
+  /* Семантика статусов: fg — текст/иконка, bg — подложка бейджа */
+  --color-success: #15803d;
+  --color-success-bg: #ecfdf3;
+  --color-warning: #b45309;
+  --color-warning-bg: #fff7e8;
+  --color-danger: #c62828;
+  --color-danger-bg: #fef1f1;
+  --color-info: #2457d6;
+  --color-info-bg: #eef3fe;
+
+  /* Типы отсутствия (категориальные, отдельно от семантики) */
+  --color-abs-vacation: #0e7490;
+  --color-abs-vacation-bg: #e0f4f8;
+  --color-abs-sick: #be185d;
+  --color-abs-sick-bg: #fce7f1;
+  --color-abs-trip: #6d28d9;
+  --color-abs-trip-bg: #efe9fd;
+  --color-abs-dayoff: #854d0e;
+  --color-abs-dayoff-bg: #fbf2d9;
+  --color-abs-unpaid: #475569;
+  --color-abs-unpaid-bg: #eceff3;
+  --color-abs-study: #4338ca;
+  --color-abs-study-bg: #e9ebfc;
+
+  /* Производственный календарь */
+  --color-cal-weekend-bg: #f0f0f2;
+  --color-cal-holiday: #b42318;
+  --color-cal-holiday-bg: #fdecea;
+  --color-cal-today: #2457d6;
+
+  /* Типографика */
+  --font-sans: "Geist", system-ui, "Segoe UI", Roboto, Arial, sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  --text-xs: 0.75rem; /* 12 — подписи сетки, мета */
+  --text-xs--line-height: 1rem;
+  --text-sm: 0.8125rem; /* 13 — таблицы, бейджи */
+  --text-sm--line-height: 1.125rem;
+  --text-base: 0.875rem; /* 14 — основной текст интерфейса */
+  --text-base--line-height: 1.25rem;
+  --text-md: 1rem; /* 16 — заголовки карточек, ключевые значения */
+  --text-md--line-height: 1.5rem;
+  --text-lg: 1.25rem; /* 20 — заголовок страницы на мобильном, крупные числа */
+  --text-lg--line-height: 1.75rem;
+  --text-xl: 1.5rem; /* 24 — заголовок страницы */
+  --text-xl--line-height: 2rem;
+
+  /* Формы и тени */
+  --radius-sm: 4px; /* бейджи, ячейки сетки */
+  --radius-md: 8px; /* кнопки, поля, строки-карточки */
+  --radius-lg: 12px; /* карточки, модалки */
+  --radius-full: 9999px; /* аватар, точки статуса, счётчики */
+
+  --shadow-pop: 0 4px 16px rgb(0 0 0 / 0.08), 0 1px 2px rgb(0 0 0 / 0.06);
+  --shadow-modal: 0 16px 48px rgb(0 0 0 / 0.16);
+
+  /* Размеры каркаса */
+  --sidebar-w: 240px;
+  --sidebar-w-collapsed: 64px;
+  --topbar-h: 56px;
+  --grid-row-h: 36px; /* строка таймлайна команды */
+  --grid-col-w: 32px; /* колонка-день таймлайна */
+}
+
+/* Тёмная тема: системная, если пользователь не выбрал светлую явно */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --color-bg: #111113;
+    --color-surface: #0b0b0d;
+    --color-surface-2: #1f1f23;
+    --color-elevated: #1a1a1e;
+    --color-border: #2a2a2f;
+    --color-border-strong: #3a3a40;
+    --color-text: #f4f4f5;
+    --color-text-muted: #a1a1aa;
+    --color-text-subtle: #8e8e98;
+    --color-primary: #7aa2ff; /* тёмный текст 7.6:1 */
+    --color-primary-hover: #9bb9ff;
+    --color-primary-soft: #1c2540;
+    --color-on-primary: #0b0b0d;
+    --color-focus: #7aa2ff;
+    --color-success: #4ade80;
+    --color-success-bg: #13251a;
+    --color-warning: #fbbf24;
+    --color-warning-bg: #2a2010;
+    --color-danger: #f87171;
+    --color-danger-bg: #2c1515;
+    --color-info: #7aa2ff;
+    --color-info-bg: #1c2540;
+    --color-abs-vacation: #22d3ee;
+    --color-abs-vacation-bg: #0f2a30;
+    --color-abs-sick: #f472b6;
+    --color-abs-sick-bg: #33141f;
+    --color-abs-trip: #a78bfa;
+    --color-abs-trip-bg: #231a3a;
+    --color-abs-dayoff: #facc15;
+    --color-abs-dayoff-bg: #2d2608;
+    --color-abs-unpaid: #94a3b8;
+    --color-abs-unpaid-bg: #1e232b;
+    --color-abs-study: #818cf8;
+    --color-abs-study-bg: #1c1d3d;
+    --color-cal-weekend-bg: #18181c;
+    --color-cal-holiday: #fca5a5;
+    --color-cal-holiday-bg: #2c1515;
+    --color-cal-today: #7aa2ff;
+    --shadow-pop: 0 4px 16px rgb(0 0 0 / 0.5), 0 0 0 1px #2a2a2f;
+    --shadow-modal: 0 16px 48px rgb(0 0 0 / 0.6), 0 0 0 1px #2a2a2f;
+  }
+}
+
+/* Явный выбор тёмной темы — те же значения, что выше */
+:root[data-theme="dark"] {
+  --color-bg: #111113;
+  --color-surface: #0b0b0d;
+  --color-surface-2: #1f1f23;
+  --color-elevated: #1a1a1e;
+  --color-border: #2a2a2f;
+  --color-border-strong: #3a3a40;
+  --color-text: #f4f4f5;
+  --color-text-muted: #a1a1aa;
+  --color-text-subtle: #8e8e98;
+  --color-primary: #7aa2ff;
+  --color-primary-hover: #9bb9ff;
+  --color-primary-soft: #1c2540;
+  --color-on-primary: #0b0b0d;
+  --color-focus: #7aa2ff;
+  --color-success: #4ade80;
+  --color-success-bg: #13251a;
+  --color-warning: #fbbf24;
+  --color-warning-bg: #2a2010;
+  --color-danger: #f87171;
+  --color-danger-bg: #2c1515;
+  --color-info: #7aa2ff;
+  --color-info-bg: #1c2540;
+  --color-abs-vacation: #22d3ee;
+  --color-abs-vacation-bg: #0f2a30;
+  --color-abs-sick: #f472b6;
+  --color-abs-sick-bg: #33141f;
+  --color-abs-trip: #a78bfa;
+  --color-abs-trip-bg: #231a3a;
+  --color-abs-dayoff: #facc15;
+  --color-abs-dayoff-bg: #2d2608;
+  --color-abs-unpaid: #94a3b8;
+  --color-abs-unpaid-bg: #1e232b;
+  --color-abs-study: #818cf8;
+  --color-abs-study-bg: #1c1d3d;
+  --color-cal-weekend-bg: #18181c;
+  --color-cal-holiday: #fca5a5;
+  --color-cal-holiday-bg: #2c1515;
+  --color-cal-today: #7aa2ff;
+  --shadow-pop: 0 4px 16px rgb(0 0 0 / 0.5), 0 0 0 1px #2a2a2f;
+  --shadow-modal: 0 16px 48px rgb(0 0 0 / 0.6), 0 0 0 1px #2a2a2f;
+}
+
+@layer base {
+  :root {
+    color-scheme: light dark;
+  }
+  :root[data-theme="light"] {
+    color-scheme: light;
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+  }
+  body {
+    @apply bg-[var(--color-surface)] font-sans text-[var(--color-text)] antialiased;
+    font-size: var(--text-base);
+    line-height: var(--text-base--line-height);
+    font-feature-settings: "tnum" 1; /* даты и числа не «прыгают» в колонках */
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+/* Штриховка «запланировано, не согласовано» — поверх подложки типа отсутствия */
+@utility pattern-pending {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    transparent 0 4px,
+    color-mix(in srgb, currentColor 18%, transparent) 4px 6px
+  );
+}
