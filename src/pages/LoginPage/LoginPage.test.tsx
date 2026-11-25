@@ -20,16 +20,20 @@ const renderLogin = () =>
 describe("LoginPage", () => {
   beforeEach(() => useAuthStore.getState().logout());
 
-  it("показывает учётную запись для каждой роли", () => {
+  it("показывает учётную запись для каждой роли с ФИО из справочника", async () => {
     renderLogin();
-    for (const label of ["Сотрудник", "Руководитель", "Кадровик", "Администратор"]) {
+    expect(
+      await screen.findByRole("button", { name: "Руководитель: Кузнецов Дмитрий Александрович" }),
+    ).toBeEnabled();
+    for (const label of ["Сотрудник", "Кадровик", "Администратор"]) {
       expect(screen.getByRole("button", { name: new RegExp(label) })).toBeInTheDocument();
     }
   });
 
   it("вход под руководителем сохраняет роль и ведёт на state.from", async () => {
     renderLogin();
-    await userEvent.click(screen.getByRole("button", { name: /Руководитель/ }));
+    const manager = await screen.findByRole("button", { name: /Руководитель: Кузнецов/ });
+    await userEvent.click(manager);
 
     expect(await screen.findByText("team")).toBeInTheDocument();
     const { token, user } = useAuthStore.getState();

@@ -44,6 +44,12 @@ export const handlers = [
 
   http.post(url("/auth/refresh"), () => HttpResponse.json({ accessToken: MOCK_TOKEN })),
 
+  http.post(url("/demo/reset"), async () => {
+    await delay();
+    db.reset();
+    return new HttpResponse(null, { status: 204 });
+  }),
+
   http.get(url("/departments"), async () => {
     await delay();
     return HttpResponse.json(db.get().departments);

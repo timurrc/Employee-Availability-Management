@@ -3,6 +3,8 @@ import { AbsenceService } from "@/services/absence.service";
 import { CalendarService } from "@/services/calendar.service";
 import { EmployeeService } from "@/services/employee.service";
 import { toISODate } from "@/core/calendar";
+import { DemoService } from "@/services/demo.service";
+import { db } from "./db";
 
 // Проверка мок-API через настоящие сервисы и axios
 describe("мок-API", () => {
@@ -27,5 +29,13 @@ describe("мок-API", () => {
     const calendar = await CalendarService.getYear(2026);
     expect(calendar.days).toHaveLength(365);
     await expect(CalendarService.getYear(2030)).rejects.toMatchObject({ status: 404 });
+  });
+
+  it("сбрасывает демо-данные к исходным", async () => {
+    db.update((draft) => {
+      draft.absences = [];
+    });
+    await DemoService.reset();
+    expect(db.get().absences.length).toBeGreaterThan(0);
   });
 });

@@ -7,6 +7,7 @@ import { BrowserRouter } from "react-router-dom";
 import { Toaster } from "sonner";
 import ErrorFallback from "@/components/ui/ErrorFallback/ErrorFallback";
 import { ENV } from "@/constants/env";
+import { applyTheme, useUiStore } from "@/store/ui.store";
 import App from "./App.tsx";
 import "./index.css";
 
@@ -19,6 +20,10 @@ const queryClient = new QueryClient({
     },
   },
 });
+
+// Тема ставится до первого рендера — без вспышки светлой темы
+applyTheme(useUiStore.getState().theme);
+useUiStore.subscribe((state) => applyTheme(state.theme));
 
 /** MSW подключается только при VITE_USE_MOCK=true и не попадает в бандл иначе */
 const enableMocking = async () => {
@@ -37,7 +42,7 @@ enableMocking().then(() => {
             <Toaster position="top-right" richColors />
           </BrowserRouter>
           {/* В production-сборку не попадает */}
-          <ReactQueryDevtools initialIsOpen={false} buttonPosition="bottom-left" />
+          <ReactQueryDevtools initialIsOpen={false} buttonPosition="bottom-right" />
         </QueryClientProvider>
       </ErrorBoundary>
     </StrictMode>,
