@@ -155,6 +155,45 @@ describe("stepDeadline", () => {
   });
 });
 
+describe("stepDeadline: «Оставить и ждать выхода»", () => {
+  const absences = [makeAbsence("v", "e1", "2026-11-23", "2026-12-04")];
+  const context = { employees, absences };
+
+  it("срок идёт от дня выхода, заместитель не подставляется", () => {
+    const result = stepDeadline(
+      CALENDAR,
+      { approverId: "e1", durationDays: 2, start: "2026-11-25", waitForReturn: true },
+      context,
+    );
+    expect(result).toMatchObject({
+      risk: "waiting",
+      due: "2026-12-08",
+      dueIfWaiting: "2026-12-08",
+      resolution: { status: "self", actorId: "e1" },
+    });
+    expect(result.absence?.id).toBe("v");
+  });
+
+  it("открытый больничный — дата выхода неизвестна, срок обычный", () => {
+    const sick = [makeAbsence("s", "e1", "2026-11-20", null, { type: "sick", status: "open" })];
+    const result = stepDeadline(
+      CALENDAR,
+      { approverId: "e1", durationDays: 2, start: "2026-11-25", waitForReturn: true },
+      { employees, absences: sick },
+    );
+    expect(result).toMatchObject({ risk: "waiting", due: "2026-11-27", dueIfWaiting: null });
+  });
+
+  it("на месте на старте — флаг ни на что не влияет", () => {
+    const result = stepDeadline(
+      CALENDAR,
+      { approverId: "e3", durationDays: 2, start: "2026-11-25", waitForReturn: true },
+      context,
+    );
+    expect(result.risk).toBe("none");
+  });
+});
+
 describe("routeDeadlines", () => {
   const document: IDocument = {
     id: "doc",
@@ -194,5 +233,27 @@ describe("routeDeadlines", () => {
     expect(result[1].dueIfWaiting).toBe("2026-12-08");
     expect(result[2].approverId).toBe("e2");
     expect(result[3].resolution.actorId).toBe("e1");
+  });
+
+  it("«Оставить» на этапе: срок от выхода; у переданного этапа флаг не действует", () => {
+    const absences = [makeAbsence("v", "e1", "2026-11-23", "2026-12-04")];
+    const waiting: IDocument = {
+      ...document,
+      routeStartedAt: "2026-11-25",
+      steps: [
+        { id: "a", approverId: "e1", durationDays: 2, status: "in_progress", waitForReturn: true },
+        {
+          id: "b",
+          approverId: "e1",
+          durationDays: 2,
+          status: "waiting",
+          waitForReturn: true,
+          delegatedToId: "e3",
+        },
+      ],
+    };
+    const [first, second] = routeDeadlines(CALENDAR, waiting, { employees, absences });
+    expect(first).toMatchObject({ risk: "waiting", due: "2026-12-08" });
+    expect(second).toMatchObject({ approverId: "e3", risk: "none", start: "2026-12-08" });
   });
 });

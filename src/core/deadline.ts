@@ -41,9 +41,10 @@ export const groupConsecutiveDays = (days: ICalendarDay[]): IDayRange[] =>
  * none — согласующий на месте весь срок;
  * delegated — согласующий отсутствует, этап ведёт заместитель;
  * absent_in_window — на старте на месте, но уйдёт до окончания срока;
- * no_deputy — отсутствует и замещать некому (или цикл замещений).
+ * no_deputy — отсутствует и замещать некому (или цикл замещений);
+ * waiting — отсутствует, но инициатор решил ждать его выхода («Оставить»).
  */
-export type DeadlineRisk = "none" | "delegated" | "absent_in_window" | "no_deputy";
+export type DeadlineRisk = "none" | "delegated" | "absent_in_window" | "no_deputy" | "waiting";
 
 export interface IStepDeadline {
   start: ISODate;
@@ -70,10 +71,31 @@ export interface IStepDeadline {
  */
 export const stepDeadline = (
   calendar: CalendarIndex,
-  step: { approverId: string; durationDays: number; start: ISODate },
+  step: { approverId: string; durationDays: number; start: ISODate; waitForReturn?: boolean },
   context: IDeputyContext,
 ): IStepDeadline => {
   const { approverId, durationDays, start } = step;
+
+  // «Оставить»: этап остаётся на отсутствующем, срок идёт от дня его выхода
+  const awayAtStart = step.waitForReturn ? absenceOn(context.absences, approverId, start) : null;
+  if (awayAtStart) {
+    const returns = availableFrom(calendar, approverId, start, context.absences);
+    const waitingDue =
+      returns === null ? null : addWorkingDays(calendar, returns, Math.max(durationDays - 1, 0));
+    const due = waitingDue ?? addWorkingDays(calendar, start, durationDays);
+    return {
+      start,
+      due,
+      durationDays,
+      extraDaysOff: groupConsecutiveDays(specialDaysOffBetween(calendar, start, due)),
+      approverId,
+      resolution: { status: "self", actorId: approverId, chain: [approverId] },
+      risk: "waiting",
+      absence: awayAtStart,
+      dueIfWaiting: waitingDue,
+    };
+  }
+
   const due = addWorkingDays(calendar, start, durationDays);
   const resolution = resolveDeputy(approverId, start, context);
   const base = {
@@ -142,6 +164,7 @@ export const routeDeadlines = (
         approverId: step.delegatedToId ?? step.approverId,
         durationDays: step.durationDays,
         start,
+        waitForReturn: !step.delegatedToId && step.waitForReturn,
       },
       { ...context, documentType: document.type },
     );
