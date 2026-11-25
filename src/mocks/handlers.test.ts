@@ -103,7 +103,7 @@ describe("мок-API", () => {
   });
 
   it("постоянный заместитель: цикл запрещён", async () => {
-    // e05 → e06 → e07 → e06; назначить e04 заместителем e05? e04 → e05 — цикл
+    // e04 → e05 → e06 → e07 → e08: назначить e04 заместителем e05 — цикл
     await expect(EmployeeService.setDeputy("e05", "e04")).rejects.toMatchObject({
       status: 422,
       message: expect.stringMatching(/^Создаст цикл: Громов/),

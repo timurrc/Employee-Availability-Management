@@ -25,11 +25,13 @@ describe("HomePage", () => {
 
     expect(await screen.findByText("3 заявки на отпуск ждут решения")).toBeInTheDocument();
     const card = absentCard();
-    // В ИТ сегодня: Мельников (командировка) и Новиков (отгул) — и они замещают друг друга
+    // В ИТ сегодня: Мельников (командировка) и Новиков (отгул). Заместитель Новикова — Мельников,
+    // он тоже отсутствует, поэтому цепочка идёт дальше: обоих замещает Григорьева
     expect(
       await within(card).findByRole("link", { name: "Мельников Роман Игоревич" }),
     ).toBeVisible();
-    expect(within(card).getAllByText("Нет замещающего")).toHaveLength(2);
+    expect(within(card).queryByText("Нет замещающего")).toBeNull();
+    expect(within(card).getAllByText(/Григорьева/)).toHaveLength(2);
     expect(screen.getByRole("meter", { name: "Покрытие: ИТ-отдел" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Заявка на отпуск" })).toBeInTheDocument();
   });
