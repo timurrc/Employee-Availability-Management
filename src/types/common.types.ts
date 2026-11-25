@@ -6,3 +6,9 @@ export interface IPeriod {
   start: ISODate;
   end: ISODate | null;
 }
+
+/** Период с известной датой окончания */
+export interface IClosedPeriod {
+  start: ISODate;
+  end: ISODate;
+}
