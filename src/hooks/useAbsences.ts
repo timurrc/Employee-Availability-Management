@@ -2,10 +2,15 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { ApiError } from "@/api/axios.api";
 import { QUERY_KEYS } from "@/constants/queryKeys";
 import { AbsenceService, type IAbsenceFilter } from "@/services/absence.service";
+import { SickLeaveService } from "@/services/sickLeave.service";
 import type {
   IAbsence,
   IAbsenceStatusDto,
+  ICloseSickLeaveDto,
   ICreateAbsenceDto,
+  IExtendSickLeaveDto,
+  IExtendVacationDto,
+  IOpenSickLeaveDto,
   IUpdateAbsenceDto,
 } from "@/types/absence.types";
 
@@ -49,6 +54,38 @@ export const useDeleteAbsence = () => {
   const invalidate = useInvalidateAbsences();
   return useMutation<void, ApiError, string>({
     mutationFn: AbsenceService.remove,
+    onSuccess: invalidate,
+  });
+};
+
+export const useOpenSickLeave = () => {
+  const invalidate = useInvalidateAbsences();
+  return useMutation<IAbsence, ApiError, IOpenSickLeaveDto>({
+    mutationFn: SickLeaveService.open,
+    onSuccess: invalidate,
+  });
+};
+
+export const useExtendSickLeave = () => {
+  const invalidate = useInvalidateAbsences();
+  return useMutation<IAbsence, ApiError, { id: string; dto: IExtendSickLeaveDto }>({
+    mutationFn: ({ id, dto }) => SickLeaveService.extend(id, dto),
+    onSuccess: invalidate,
+  });
+};
+
+export const useCloseSickLeave = () => {
+  const invalidate = useInvalidateAbsences();
+  return useMutation<IAbsence, ApiError, { id: string; dto: ICloseSickLeaveDto }>({
+    mutationFn: ({ id, dto }) => SickLeaveService.close(id, dto),
+    onSuccess: invalidate,
+  });
+};
+
+export const useExtendVacation = () => {
+  const invalidate = useInvalidateAbsences();
+  return useMutation<IAbsence, ApiError, { id: string; dto: IExtendVacationDto }>({
+    mutationFn: ({ id, dto }) => AbsenceService.extendVacation(id, dto),
     onSuccess: invalidate,
   });
 };

@@ -1,6 +1,12 @@
-import { MOCK_ABSENCES, MOCK_DEPARTMENTS, MOCK_DOCUMENTS, MOCK_EMPLOYEES } from "@/constants/mock";
+import {
+  MOCK_ABSENCES,
+  MOCK_DELEGATIONS,
+  MOCK_DEPARTMENTS,
+  MOCK_DOCUMENTS,
+  MOCK_EMPLOYEES,
+} from "@/constants/mock";
 import { PRODUCTION_CALENDAR_SOURCES } from "@/constants/productionCalendar";
-import type { IAbsence } from "@/types/absence.types";
+import type { IAbsence, IDelegation } from "@/types/absence.types";
 import type { ICalendarYearSource } from "@/types/calendar.types";
 import type { IDocument } from "@/types/document.types";
 import type { IDepartment, IEmployee } from "@/types/employee.types";
@@ -10,12 +16,13 @@ import type { IDepartment, IEmployee } from "@/types/employee.types";
  * переживало перезагрузку. Знают о ней только хендлеры MSW — сервисы и UI нет.
  * Поменял форму данных — подними версию в ключе, старый снимок будет проигнорирован.
  */
-const STORAGE_KEY = "eam:db:v2";
+const STORAGE_KEY = "eam:db:v3";
 
 export interface IDb {
   departments: IDepartment[];
   employees: IEmployee[];
   absences: IAbsence[];
+  delegations: IDelegation[];
   documents: IDocument[];
   calendars: ICalendarYearSource[];
 }
@@ -25,6 +32,7 @@ const seed = (): IDb =>
     departments: MOCK_DEPARTMENTS,
     employees: MOCK_EMPLOYEES,
     absences: MOCK_ABSENCES,
+    delegations: MOCK_DELEGATIONS,
     documents: MOCK_DOCUMENTS,
     calendars: PRODUCTION_CALENDAR_SOURCES,
   });

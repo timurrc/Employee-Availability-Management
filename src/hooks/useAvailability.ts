@@ -11,6 +11,7 @@ import type { IPersonStatus } from "@/types/availability.types";
 import { todayISO } from "@/utils/date";
 import { useAbsences } from "./useAbsences";
 import { useCalendarYear } from "./useCalendar";
+import { useDelegations } from "./useDelegations";
 import { useEmployees } from "./useEmployees";
 
 /** Отсутствие, которое начнётся в ближайшие SOON_DAYS дней (после date) */
@@ -32,6 +33,7 @@ const upcomingAbsence = (absences: IAbsence[], employeeId: string, date: ISODate
 /**
  * Статус доступности и заместитель любого сотрудника на дату. Собирает справочник,
  * отсутствия и производственный календарь (текущий и следующий год) и считает через src/core.
+ * Ручные замещения на период учитываются в цепочке заместителей.
  * Нужен везде, где есть имя человека: PersonChip, поиск, маршрут согласования.
  */
 export const useAvailability = () => {
@@ -40,6 +42,7 @@ export const useAvailability = () => {
   const absences = useAbsences();
   const current = useCalendarYear(year);
   const next = useCalendarYear(year + 1);
+  const delegations = useDelegations();
 
   // Следующего года в календаре может ещё не быть (постановление не вышло) — это не ошибка
   const queries = [employees, absences, current];
@@ -63,10 +66,11 @@ export const useAvailability = () => {
         deputy: resolveDeputy(employeeId, date, {
           employees: employees.data ?? [],
           absences: list,
+          delegations: delegations.data,
         }),
       };
     },
-    [calendar, absences.data, employees.data],
+    [calendar, absences.data, employees.data, delegations.data],
   );
 
   const employeeById = useCallback((id: string): IEmployee | undefined => byId.get(id), [byId]);
@@ -75,6 +79,7 @@ export const useAvailability = () => {
     calendar,
     employees: employees.data ?? [],
     absences: absences.data ?? [],
+    delegations: delegations.data ?? [],
     statusOf,
     employeeById,
     isLoading: queries.some((q) => q.isLoading),

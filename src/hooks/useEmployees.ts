@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { ApiError } from "@/api/axios.api";
 import { QUERY_KEYS } from "@/constants/queryKeys";
 import { EmployeeService } from "@/services/employee.service";
@@ -27,3 +27,14 @@ export const useDepartments = () =>
     queryFn: ({ signal }) => EmployeeService.getDepartments(signal),
     staleTime: DIRECTORY_STALE_TIME,
   });
+
+export const useSetDeputy = () => {
+  const queryClient = useQueryClient();
+  return useMutation<IEmployee, ApiError, { id: string; deputyId: string | null }>({
+    mutationFn: ({ id, deputyId }) => EmployeeService.setDeputy(id, deputyId),
+    onSuccess: (employee) => {
+      queryClient.setQueryData(QUERY_KEYS.employees.byId(employee.id), employee);
+      return queryClient.invalidateQueries({ queryKey: QUERY_KEYS.employees.all });
+    },
+  });
+};

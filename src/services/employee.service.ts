@@ -12,6 +12,12 @@ export const EmployeeService = {
     return data;
   },
 
+  /** Постоянный заместитель; null — снять. Цикл → 422 */
+  setDeputy: async (id: string, deputyId: string | null) => {
+    const { data } = await api.patch<IEmployee>(`/employees/${id}/deputy`, { deputyId });
+    return data;
+  },
+
   getDepartments: async (signal?: AbortSignal) => {
     const { data } = await api.get<IDepartment[]>("/departments", { signal });
     return data;

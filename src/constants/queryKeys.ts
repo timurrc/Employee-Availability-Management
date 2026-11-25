@@ -13,6 +13,9 @@ export const QUERY_KEYS = {
     all: ["absences"] as const,
     list: (filter: IAbsenceFilter) => ["absences", filter] as const,
   },
+  delegations: {
+    all: ["delegations"] as const,
+  },
   calendar: {
     year: (year: number) => ["calendar", year] as const,
   },

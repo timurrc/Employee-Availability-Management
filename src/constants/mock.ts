@@ -1,6 +1,6 @@
 import { addDays } from "date-fns";
 import { toISODate } from "@/core/calendar";
-import type { IAbsence } from "@/types/absence.types";
+import type { IAbsence, IDelegation } from "@/types/absence.types";
 import type { ISODate } from "@/types/common.types";
 import type { IDocument } from "@/types/document.types";
 import type { IDepartment, IEmployee, Role } from "@/types/employee.types";
@@ -181,10 +181,28 @@ export const MOCK_ABSENCES: IAbsence[] = [
   // Сейчас нет на месте
   absence("a01", "e04", "vacation", 0, 13, "approved", { deputyId: "e05" }),
   absence("a02", "e06", "vacation", -3, 10, "approved"),
-  absence("a03", "e12", "sick", -2, null, "open", { elnNumber: "910123456789" }),
+  absence("a03", "e12", "sick", -2, null, "open", {
+    elnNumber: "910123456789",
+    elnHistory: [{ number: "910123456789", start: fromToday(-2), end: null }],
+  }),
   absence("a04", "e22", "trip", -1, 2, "approved", { comment: "Конференция, Казань" }),
   absence("a05", "e20", "dayoff", 0, 0, "approved"),
-  absence("a06", "e30", "sick", -6, 1, "extended", { elnNumber: "910987654321" }),
+  absence("a06", "e30", "sick", -6, 1, "extended", {
+    elnNumber: "910987654322",
+    elnHistory: [
+      { number: "910987654321", start: fromToday(-6), end: fromToday(-2) },
+      { number: "910987654322", start: fromToday(-1), end: fromToday(1) },
+    ],
+  }),
+  // Больничный пришёлся на согласованный отпуск — HR решает по ст. 124
+  absence("a21", "e30", "vacation", -1, 12, "approved", {
+    decision: { byId: "e27", at: fromToday(-30) },
+  }),
+  // Открытый больничный без постоянного заместителя — «Нет замещающего»
+  absence("a22", "e18", "sick", -1, null, "open", {
+    elnNumber: "910246813579",
+    elnHistory: [{ number: "910246813579", start: fromToday(-1), end: null }],
+  }),
   // Скоро
   absence("a07", "e19", "vacation", 5, 18, "approved", { deputyId: "e20" }),
   absence("a08", "e10", "study", 2, 4, "approved"),
@@ -213,6 +231,19 @@ export const MOCK_ABSENCES: IAbsence[] = [
   absence("a15", "e11", "vacation", -40, -27, "approved"),
   absence("a16", "e29", "sick", -15, -8, "closed", { elnNumber: "910555444333" }),
   absence("a17", "e26", "unpaid", -20, -18, "approved"),
+];
+
+/** Замещения на период, назначенные вручную (руководитель/HR) */
+export const MOCK_DELEGATIONS: IDelegation[] = [
+  {
+    id: "g01",
+    fromId: "e01",
+    toId: "e02",
+    period: { start: fromToday(10), end: fromToday(12) },
+    reason: "manual",
+    documentTypes: [],
+    createdById: "e01",
+  },
 ];
 
 export const MOCK_DOCUMENTS: IDocument[] = [
