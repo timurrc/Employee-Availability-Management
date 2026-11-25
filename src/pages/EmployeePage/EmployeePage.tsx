@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import AbsenceHistory from "@/components/modules/AbsenceHistory/AbsenceHistory";
 import EmployeeNow from "@/components/modules/EmployeeNow/EmployeeNow";
 import PersonChip from "@/components/modules/PersonChip/PersonChip";
+import VacationBalance from "@/components/modules/VacationBalance/VacationBalance";
 import Avatar from "@/components/ui/Avatar/Avatar";
 import Badge from "@/components/ui/Badge/Badge";
 import Card from "@/components/ui/Card/Card";
@@ -123,6 +124,8 @@ const EmployeePage = () => {
       <Card>
         <AbsenceHistory plan={page.plan} history={page.history} today={today} />
       </Card>
+
+      {page.balance && <VacationBalance summary={page.balance} today={today} compact />}
 
       {page.documents.length > 0 && (
         <Card title="Документы на нём" flush>

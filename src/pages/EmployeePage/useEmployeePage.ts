@@ -8,6 +8,7 @@ import { useDepartments, useEmployee } from "@/hooks/useEmployees";
 import { useAuthStore } from "@/store/auth.store";
 import { todayISO } from "@/utils/date";
 import { splitAbsences } from "@/utils/employee";
+import { vacationSummary } from "@/utils/vacation";
 
 export const useEmployeePage = () => {
   const { id } = useParams<{ id: string }>();
@@ -56,9 +57,16 @@ export const useEmployeePage = () => {
       });
   })();
 
+  // Баланс видят сам сотрудник, его руководитель и HR — остальным блок не рендерится
+  const canSeeBalance =
+    isSelf || role === "hr" || (role === "manager" && employee?.managerId === viewer?.id);
+  const balance =
+    canSeeBalance && employee ? vacationSummary(calendar, employee, absences, today) : null;
+
   return {
     id,
     employee,
+    balance,
     department,
     manager,
     permanentDeputy,

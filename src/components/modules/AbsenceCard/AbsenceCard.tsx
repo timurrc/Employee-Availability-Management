@@ -2,10 +2,13 @@ import { X } from "lucide-react";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import AbsenceTag from "@/components/modules/AbsenceTag/AbsenceTag";
+import RejectDialog from "@/components/modules/ApprovalQueue/RejectDialog";
 import DeputyHint from "@/components/modules/DeputyHint/DeputyHint";
 import PersonChip from "@/components/modules/PersonChip/PersonChip";
 import Badge from "@/components/ui/Badge/Badge";
+import Button from "@/components/ui/Button/Button";
 import { eachISODate } from "@/core/calendar";
+import { useVacationDecision } from "@/hooks/useVacationDecision";
 import { ABSENCE_META, ABSENCE_STATUS_META } from "@/constants/absence";
 import { buildPath, ROUTES } from "@/constants/routes";
 import type { IAbsence } from "@/types/absence.types";
@@ -34,7 +37,8 @@ const LINK = "text-sm font-medium text-[var(--color-primary)] hover:underline";
 
 /**
  * Поповер «Карточка отсутствия»: тип, период, статус, кто замещает, комментарий.
- * Решения (согласовать, продлить) — в своих разделах, сюда ведут ссылки.
+ * Руководитель согласует или отклоняет заявку подчинённого прямо здесь;
+ * остальные решения (продлить больничный) — в своих разделах, сюда ведут ссылки.
  */
 const AbsenceCard = ({
   absence,
@@ -47,6 +51,10 @@ const AbsenceCard = ({
 }: AbsenceCardProps) => {
   const ref = useRef<HTMLDivElement>(null);
   const [position, setPosition] = useState<{ top: number; left: number } | null>(null);
+  const [rejecting, setRejecting] = useState(false);
+  // Диалог отказа рендерится в body — клики в нём не должны закрывать карточку
+  const rejectingRef = useRef(false);
+  const decision = useVacationDecision();
   const employee = employeeById(absence.employeeId);
   const meta = ABSENCE_META[absence.type];
   const status = ABSENCE_STATUS_META[absence.status];
@@ -66,12 +74,13 @@ const AbsenceCard = ({
   useEffect(() => {
     // Esc и «Закрыть» возвращают фокус на ячейку; клик мимо — нет (фокус ушёл туда, куда кликнули)
     const onKey = (event: KeyboardEvent) => {
-      if (event.key !== "Escape") return;
+      if (event.key !== "Escape" || rejectingRef.current) return;
       onClose();
       anchor.focus();
     };
     const onDown = (event: MouseEvent) => {
       const target = event.target as Node;
+      if (rejectingRef.current) return;
       if (!ref.current?.contains(target) && !anchor.contains(target)) onClose();
     };
     window.addEventListener("keydown", onKey);
@@ -94,20 +103,43 @@ const AbsenceCard = ({
       : formatDays(eachISODate(absence.period.start, absence.period.end).length, "calendar");
 
   const isAuthor = viewer?.id === absence.employeeId;
-  const action =
-    viewer?.role === "manager" && absence.status === "pending" ? (
-      <Link to={ROUTES.VACATIONS} className={LINK}>
-        Разобрать заявку
-      </Link>
-    ) : (viewer?.role === "hr" || viewer?.role === "admin") && absence.type === "sick" ? (
-      <Link to={ROUTES.SICK_LEAVES} className={LINK}>
-        К больничным
-      </Link>
-    ) : isAuthor && absence.type !== "sick" ? (
-      <Link to={ROUTES.VACATIONS} className={LINK}>
-        Мои заявки
-      </Link>
-    ) : null;
+  const canDecide =
+    viewer?.role === "manager" && absence.status === "pending" && employee?.managerId === viewer.id;
+  const name = employee ? shortName(employee.fullName) : "сотрудник";
+  const toggleReject = (value: boolean) => {
+    rejectingRef.current = value;
+    setRejecting(value);
+  };
+  const isBusy = decision.busyId === absence.id;
+
+  const action = canDecide ? (
+    <div className="flex gap-2">
+      <Button
+        size="sm"
+        isLoading={isBusy && !rejecting}
+        onClick={async () => {
+          if (await decision.approve(absence, name)) onClose();
+        }}
+      >
+        Согласовать
+      </Button>
+      <Button variant="secondary" size="sm" disabled={isBusy} onClick={() => toggleReject(true)}>
+        Отклонить
+      </Button>
+    </div>
+  ) : viewer?.role === "manager" && absence.status === "pending" ? (
+    <Link to={ROUTES.VACATIONS} className={LINK}>
+      Разобрать заявку
+    </Link>
+  ) : (viewer?.role === "hr" || viewer?.role === "admin") && absence.type === "sick" ? (
+    <Link to={ROUTES.SICK_LEAVES} className={LINK}>
+      К больничным
+    </Link>
+  ) : isAuthor && absence.type !== "sick" ? (
+    <Link to={ROUTES.VACATIONS} className={LINK}>
+      Мои заявки
+    </Link>
+  ) : null;
 
   return (
     <div
@@ -180,6 +212,19 @@ const AbsenceCard = ({
         )}
         {action}
       </div>
+      {rejecting && (
+        <RejectDialog
+          subject={`${name} · ${formatPeriod(absence.period, today)}`}
+          isPending={isBusy}
+          onClose={() => toggleReject(false)}
+          onConfirm={async (reason) => {
+            if (await decision.reject(absence, reason, name)) {
+              toggleReject(false);
+              onClose();
+            }
+          }}
+        />
+      )}
     </div>
   );
 };
