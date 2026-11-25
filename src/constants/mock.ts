@@ -248,11 +248,37 @@ export const MOCK_DELEGATIONS: IDelegation[] = [
 
 export const MOCK_DOCUMENTS: IDocument[] = [
   {
+    id: "doc4",
+    number: "С-2026/512",
+    title: "Счёт на продление лицензий IDE",
+    type: "invoice",
+    authorId: "e21",
+    createdAt: fromToday(-9),
+    routeStartedAt: fromToday(-8),
+    steps: [
+      {
+        id: "s1",
+        approverId: "e19",
+        durationDays: 2,
+        status: "approved",
+        decidedAt: fromToday(-7),
+      },
+      {
+        id: "s2",
+        approverId: "e09",
+        durationDays: 2,
+        status: "approved",
+        decidedAt: fromToday(-6),
+      },
+    ],
+  },
+  {
     id: "doc1",
     number: "Д-2026/114",
     title: "Договор поставки серверного оборудования",
     type: "contract",
-    authorId: "e29",
+    // Автор — демо-«Сотрудник»: на «Сегодня» видно «Передать заместителю» (юрист в отпуске)
+    authorId: "e21",
     createdAt: fromToday(-1),
     routeStartedAt: fromToday(0),
     steps: [

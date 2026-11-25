@@ -19,6 +19,13 @@ import type {
   IUpdateAbsenceDto,
 } from "@/types/absence.types";
 import type { ICalendarYearSource, ISetCalendarDayDto } from "@/types/calendar.types";
+import type {
+  ICreateDocumentDto,
+  IDecisionDto,
+  IDocument,
+  IRouteDto,
+  IStepPatchDto,
+} from "@/types/document.types";
 import type { IAuthResponse, ILoginDto } from "@/types/auth.types";
 import { todayISO } from "@/utils/date";
 import { db } from "./db";
@@ -71,6 +78,22 @@ const findSick = (id: unknown) =>
 const nameOf = (id: string) => db.get().employees.find((e) => e.id === id)?.fullName ?? id;
 
 const formatRu = (date: string) => date.split("-").reverse().join(".");
+
+const DOCUMENT_PREFIX: Record<IDocument["type"], string> = {
+  contract: "Д",
+  order: "П",
+  memo: "СЗ",
+  invoice: "С",
+};
+
+const findDocument = (id: unknown) => db.get().documents.find((d) => d.id === id);
+
+const saveDocument = (updated: IDocument) =>
+  db.update((draft) => {
+    draft.documents = draft.documents.map((d) => (d.id === updated.id ? updated : d));
+  });
+
+const isClosedStep = (status: string) => status === "approved" || status === "rejected";
 
 /** Периоды пересекаются, если начало одного не позже конца другого (end = null — бессрочно) */
 const overlaps = (start: string, end: string | null, from: string | null, to: string | null) =>
@@ -454,6 +477,134 @@ export const handlers = [
   http.get(url("/documents"), async () => {
     await delay();
     return HttpResponse.json(db.get().documents);
+  }),
+
+  http.post(url("/documents"), async ({ request }) => {
+    await delay();
+    const dto = (await request.json()) as ICreateDocumentDto;
+    if (!dto.title?.trim())
+      return unprocessable("Укажите название", { title: ["Укажите название"] });
+    const today = todayISO();
+    const sameType = db.get().documents.filter((d) => d.type === dto.type).length;
+    const document: IDocument = {
+      id: nextId("doc"),
+      number: `${DOCUMENT_PREFIX[dto.type]}-${today.slice(0, 4)}/${String(300 + sameType).padStart(3, "0")}`,
+      title: dto.title.trim(),
+      type: dto.type,
+      authorId: dto.authorId,
+      createdAt: today,
+      routeStartedAt: null,
+      steps: [],
+    };
+    db.update((draft) => {
+      draft.documents.unshift(document);
+    });
+    return HttpResponse.json(document, { status: 201 });
+  }),
+
+  // Маршрут меняется только у черновика
+  http.put(url("/documents/:id/route"), async ({ params, request }) => {
+    await delay();
+    const dto = (await request.json()) as IRouteDto;
+    const current = findDocument(params.id);
+    if (!current) return notFound("Документ не найден");
+    if (current.routeStartedAt) return unprocessable("Маршрут уже запущен — изменить нельзя");
+    if (dto.steps.some((s) => !Number.isInteger(s.durationDays) || s.durationDays < 1)) {
+      return unprocessable("Срок этапа — целое число рабочих дней от 1");
+    }
+    const updated: IDocument = {
+      ...current,
+      steps: dto.steps.map((step) => ({
+        id: step.id ?? nextId("s"),
+        approverId: step.approverId,
+        durationDays: step.durationDays,
+        status: "waiting",
+        delegatedToId: step.delegatedToId || undefined,
+        waitForReturn: step.waitForReturn || undefined,
+      })),
+    };
+    saveDocument(updated);
+    return HttpResponse.json(updated);
+  }),
+
+  http.post(url("/documents/:id/send"), async ({ params, request }) => {
+    await delay();
+    const { start } = (await request.json()) as { start: string };
+    const current = findDocument(params.id);
+    if (!current) return notFound("Документ не найден");
+    if (current.routeStartedAt) return unprocessable("Документ уже отправлен");
+    if (current.steps.length === 0) return unprocessable("Добавьте согласующих");
+    const updated: IDocument = {
+      ...current,
+      routeStartedAt: start,
+      steps: current.steps.map((s, i) => ({ ...s, status: i === 0 ? "in_progress" : "waiting" })),
+    };
+    saveDocument(updated);
+    return HttpResponse.json(updated);
+  }),
+
+  // Передать заместителю / вернуть / «Оставить и ждать выхода»
+  http.patch(url("/documents/:id/steps/:stepId"), async ({ params, request }) => {
+    await delay();
+    const dto = (await request.json()) as IStepPatchDto;
+    const current = findDocument(params.id);
+    const step = current?.steps.find((s) => s.id === params.stepId);
+    if (!current || !step) return notFound("Этап не найден");
+    if (isClosedStep(step.status)) return unprocessable("Этап уже завершён");
+    if (dto.delegatedToId && dto.delegatedToId === step.approverId) {
+      return unprocessable("Этап и так на этом согласующем");
+    }
+    const delegated = "delegatedToId" in dto;
+    const updated: IDocument = {
+      ...current,
+      steps: current.steps.map((s) =>
+        s.id === step.id
+          ? {
+              ...s,
+              delegatedToId: delegated ? (dto.delegatedToId ?? undefined) : s.delegatedToId,
+              // Передали заместителю — ждать уже некого
+              waitForReturn:
+                delegated && dto.delegatedToId ? false : (dto.waitForReturn ?? s.waitForReturn),
+            }
+          : s,
+      ),
+    };
+    saveDocument(updated);
+    return HttpResponse.json(updated);
+  }),
+
+  http.post(url("/documents/:id/decision"), async ({ params, request }) => {
+    await delay();
+    const dto = (await request.json()) as IDecisionDto;
+    const current = findDocument(params.id);
+    if (!current) return notFound("Документ не найден");
+    const index = current.steps.findIndex((s) => s.status === "in_progress");
+    const step = current.steps[index];
+    if (!step) return unprocessable("Документ не ждёт решения");
+    if ((step.delegatedToId ?? step.approverId) !== dto.byId) {
+      return HttpResponse.json({ message: "Сейчас решение не за вами" }, { status: 403 });
+    }
+    if (dto.decision === "rejected" && !dto.reason?.trim()) {
+      return unprocessable("Укажите причину отказа", { reason: ["Укажите причину"] });
+    }
+    const today = todayISO();
+    const updated: IDocument = {
+      ...current,
+      steps: current.steps.map((s, i) => {
+        if (i === index) {
+          return {
+            ...s,
+            status: dto.decision,
+            decidedAt: today,
+            comment: dto.decision === "rejected" ? dto.reason?.trim() : undefined,
+          };
+        }
+        if (i === index + 1 && dto.decision === "approved") return { ...s, status: "in_progress" };
+        return s;
+      }),
+    };
+    saveDocument(updated);
+    return HttpResponse.json(updated);
   }),
 
   http.get(url("/documents/:id"), async ({ params }) => {

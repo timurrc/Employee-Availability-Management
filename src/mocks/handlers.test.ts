@@ -5,6 +5,7 @@ import { EmployeeService } from "@/services/employee.service";
 import { toISODate } from "@/core/calendar";
 import { DemoService } from "@/services/demo.service";
 import { DelegationService } from "@/services/delegation.service";
+import { DocumentService } from "@/services/document.service";
 import { SickLeaveService } from "@/services/sickLeave.service";
 import { db } from "./db";
 
@@ -158,6 +159,77 @@ describe("мок-API", () => {
         workingWeekends: [],
         shortened: [],
       }),
+    ).rejects.toMatchObject({ status: 422 });
+  });
+
+  it("документ: создать → маршрут → отправить → передать → решения", async () => {
+    const created = await DocumentService.create({ title: "Тест", type: "memo", authorId: "e21" });
+    expect(created).toMatchObject({ routeStartedAt: null, steps: [] });
+    expect(created.number).toMatch(/^СЗ-\d{4}\/\d{3}$/);
+    await expect(DocumentService.send(created.id, "2026-11-25")).rejects.toMatchObject({
+      status: 422,
+    });
+    await expect(
+      DocumentService.saveRoute(created.id, { steps: [{ approverId: "e19", durationDays: 0 }] }),
+    ).rejects.toMatchObject({ status: 422 });
+
+    const routed = await DocumentService.saveRoute(created.id, {
+      steps: [
+        { approverId: "e19", durationDays: 2, waitForReturn: true },
+        { approverId: "e04", durationDays: 1, delegatedToId: "e05" },
+      ],
+    });
+    expect(routed.steps.map((s) => [s.status, s.delegatedToId, s.waitForReturn])).toEqual([
+      ["waiting", undefined, true],
+      ["waiting", "e05", undefined],
+    ]);
+    const sent = await DocumentService.send(created.id, "2026-11-25");
+    expect(sent.steps.map((s) => s.status)).toEqual(["in_progress", "waiting"]);
+    await expect(DocumentService.send(created.id, "2026-11-25")).rejects.toMatchObject({
+      status: 422,
+    });
+    await expect(DocumentService.saveRoute(created.id, { steps: [] })).rejects.toMatchObject({
+      status: 422,
+    });
+
+    const [first, second] = sent.steps;
+    const delegated = await DocumentService.patchStep(created.id, first!.id, {
+      delegatedToId: "e20",
+    });
+    expect(delegated.steps[0]).toMatchObject({ delegatedToId: "e20", waitForReturn: false });
+    await expect(
+      DocumentService.patchStep(created.id, first!.id, { delegatedToId: "e19" }),
+    ).rejects.toMatchObject({ status: 422 });
+    const waiting = await DocumentService.patchStep(created.id, second!.id, {
+      waitForReturn: true,
+    });
+    expect(waiting.steps[1]).toMatchObject({ delegatedToId: "e05", waitForReturn: true });
+
+    await expect(
+      DocumentService.decide(created.id, { byId: "e19", decision: "approved" }),
+    ).rejects.toMatchObject({ status: 403 });
+    const approved = await DocumentService.decide(created.id, {
+      byId: "e20",
+      decision: "approved",
+    });
+    expect(approved.steps.map((s) => s.status)).toEqual(["approved", "in_progress"]);
+    await expect(
+      DocumentService.patchStep(created.id, first!.id, { delegatedToId: null }),
+    ).rejects.toMatchObject({ status: 422 });
+    await expect(
+      DocumentService.decide(created.id, { byId: "e05", decision: "rejected" }),
+    ).rejects.toMatchObject({ status: 422 });
+    const rejected = await DocumentService.decide(created.id, {
+      byId: "e05",
+      decision: "rejected",
+      reason: " Нет бюджета ",
+    });
+    expect(rejected.steps[1]).toMatchObject({ status: "rejected", comment: "Нет бюджета" });
+    await expect(
+      DocumentService.decide(created.id, { byId: "e05", decision: "approved" }),
+    ).rejects.toMatchObject({ status: 422 });
+    await expect(
+      DocumentService.create({ title: " ", type: "memo", authorId: "e21" }),
     ).rejects.toMatchObject({ status: 422 });
   });
 });
