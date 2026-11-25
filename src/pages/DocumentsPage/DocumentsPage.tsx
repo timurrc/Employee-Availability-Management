@@ -141,6 +141,13 @@ const DocumentsPage = () => {
             <EmptyState
               icon={FileText}
               title={page.tab === "waiting" ? "Вашего решения ничего не ждёт" : "Документов нет"}
+              action={
+                page.tab !== "all" && (
+                  <Button variant="secondary" onClick={() => page.setTab("all")}>
+                    Показать все документы
+                  </Button>
+                )
+              }
             />
           )
         }

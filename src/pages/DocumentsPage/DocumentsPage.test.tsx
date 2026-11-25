@@ -40,6 +40,16 @@ describe("DocumentsPage", () => {
     ).toHaveTextContent(/Согласован \d+/);
   });
 
+  it("пустая вкладка предлагает показать все документы", async () => {
+    renderPage("/documents?tab=waiting");
+    expect(await screen.findByText("Вашего решения ничего не ждёт")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Показать все документы" }));
+    expect(await screen.findByRole("table", { name: "Документы" })).toHaveTextContent(
+      "Приказ о премировании",
+    );
+    expect(screen.getByRole("radio", { name: "Все" })).toBeChecked();
+  });
+
   it("фильтры и пусто", async () => {
     renderPage("/documents?tab=waiting");
     expect(await screen.findByText("Вашего решения ничего не ждёт")).toBeInTheDocument();
