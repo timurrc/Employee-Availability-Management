@@ -12,7 +12,7 @@ interface ProtectedRouteProps {
 
 /**
  * Обёртка для группы роутов.
- * private: нет токена → /login, после входа вернёт на исходную страницу (state.from).
+ * private: нет токена → /login, после входа вернёт на исходную страницу с query (state.from).
  * guest:   есть токен → на главную.
  * roles:   роль пользователя не из списка → на главную.
  */
@@ -22,7 +22,14 @@ const ProtectedRoute = ({ mode = "private", roles }: ProtectedRouteProps) => {
   const location = useLocation();
 
   if (mode === "private" && !isAuth) {
-    return <Navigate to={ROUTES.LOGIN} replace state={{ from: location.pathname }} />;
+    // Вместе с query: фильтры и вкладки из ссылки (?tab=all, ?dept=…) переживают вход
+    return (
+      <Navigate
+        to={ROUTES.LOGIN}
+        replace
+        state={{ from: `${location.pathname}${location.search}` }}
+      />
+    );
   }
 
   if (mode === "guest" && isAuth) {
