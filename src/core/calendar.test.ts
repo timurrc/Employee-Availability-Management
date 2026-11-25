@@ -4,6 +4,7 @@ import { CALENDAR } from "@/test/fixtures";
 import {
   addWorkingDays,
   buildCalendarYear,
+  calendarChanges,
   countWorkingDays,
   eachISODate,
   fromISODate,
@@ -13,11 +14,13 @@ import {
   monthNorm,
   nextWorkingDay,
   quarterNorm,
+  setCalendarDay,
   shiftISODate,
   specialDaysOffBetween,
   toISODate,
   workingHours,
   yearNorm,
+  yearToSource,
 } from "./calendar";
 
 const year = (value: number) => {
@@ -218,5 +221,105 @@ describe("нормы", () => {
   it("сумма кварталов равна году", () => {
     const quarters = [1, 2, 3, 4].map((q) => quarterNorm(CALENDAR, 2027, q, 7));
     expect(quarters.reduce((sum, q) => sum + q.hours, 0)).toBe(yearNorm(CALENDAR, 2027, 7).hours);
+  });
+});
+
+describe("setCalendarDay", () => {
+  const source = PRODUCTION_CALENDAR_SOURCES.find((item) => item.year === 2026)!;
+  const day = (src: typeof source, date: string) =>
+    buildCalendarYear(src).days.find((d) => d.date === date)!;
+
+  it("рабочий будний → праздник", () => {
+    const next = setCalendarDay(source, "2026-12-30", { kind: "holiday", isShortened: false });
+    expect(day(next, "2026-12-30")).toMatchObject({ kind: "holiday", note: "Праздник" });
+    expect(next.holidays.at(-1)?.date).toBe("2026-12-30");
+  });
+
+  it("будний → выходной = перенос, с примечанием", () => {
+    const next = setCalendarDay(source, "2026-12-29", {
+      kind: "weekend",
+      isShortened: false,
+      note: " Перенос с 3 января ",
+    });
+    expect(day(next, "2026-12-29")).toMatchObject({
+      kind: "weekend",
+      isTransfer: true,
+      note: "Перенос с 3 января",
+    });
+  });
+
+  it("суббота → рабочая (сокращённая), и обратно в обычный выходной", () => {
+    const working = setCalendarDay(source, "2026-12-26", { kind: "workday", isShortened: true });
+    expect(day(working, "2026-12-26")).toMatchObject({
+      kind: "workday",
+      isTransfer: true,
+      isShortened: true,
+    });
+    const back = setCalendarDay(working, "2026-12-26", { kind: "weekend", isShortened: true });
+    expect(day(back, "2026-12-26")).toMatchObject({ kind: "weekend", isShortened: false });
+    expect(back.workingWeekends).toEqual([]);
+    expect(back.shortened).not.toContain("2026-12-26");
+  });
+
+  it("праздник → обычный рабочий: убирается из списков, сокращённый не ставится выходному", () => {
+    const next = setCalendarDay(source, "2026-11-04", { kind: "workday", isShortened: false });
+    expect(day(next, "2026-11-04")).toMatchObject({ kind: "workday", isTransfer: false });
+    expect(next.holidays.some((d) => d.date === "2026-11-04")).toBe(false);
+    const sunday = setCalendarDay(source, "2026-11-01", { kind: "weekend", isShortened: true });
+    expect(sunday.extraDaysOff).toEqual(source.extraDaysOff);
+    expect(sunday.shortened).toEqual(source.shortened);
+  });
+
+  it("рабочая суббота без примечания получает подпись по умолчанию", () => {
+    const next = setCalendarDay(source, "2026-12-26", { kind: "workday", isShortened: false });
+    expect(next.workingWeekends).toEqual([{ date: "2026-12-26", note: "Рабочий выходной" }]);
+    const off = setCalendarDay(source, "2026-12-28", { kind: "weekend", isShortened: false });
+    expect(off.extraDaysOff.find((d) => d.date === "2026-12-28")?.note).toBe("Перенос");
+  });
+});
+
+describe("calendarChanges", () => {
+  const source = PRODUCTION_CALENDAR_SOURCES.find((item) => item.year === 2026)!;
+
+  it("находит изменённые дни по типу и сокращению, примечания не считает", () => {
+    const edited = setCalendarDay(
+      setCalendarDay(source, "2026-12-30", { kind: "holiday", isShortened: false }),
+      "2026-12-29",
+      { kind: "workday", isShortened: true },
+    );
+    const renamed = { ...edited, holidays: edited.holidays.map((h) => ({ ...h, note: "x" })) };
+    const changes = calendarChanges(buildCalendarYear(source), buildCalendarYear(renamed));
+    expect(changes.map((c) => [c.date, c.before.kind, c.after.kind])).toEqual([
+      ["2026-12-29", "workday", "workday"],
+      ["2026-12-30", "workday", "holiday"],
+    ]);
+  });
+
+  it("другой год — дни не совпадают, изменений нет", () => {
+    expect(calendarChanges(year(2026), year(2027))).toEqual([]);
+  });
+});
+
+describe("yearToSource", () => {
+  it("обратная сборка даёт тот же год (экспорт → импорт без потерь)", () => {
+    for (const source of PRODUCTION_CALENDAR_SOURCES) {
+      const built = buildCalendarYear(source);
+      expect(buildCalendarYear(yearToSource(built))).toEqual(built);
+    }
+  });
+
+  it("без контрольной суммы поле не появляется, примечание по умолчанию пустое", () => {
+    const built = buildCalendarYear({
+      year: 2030,
+      source: "тест",
+      holidays: [{ date: "2030-01-01", note: "НГ" }],
+      extraDaysOff: [],
+      workingWeekends: [],
+      shortened: [],
+    });
+    built.days[0] = { ...built.days[0]!, note: undefined };
+    const source = yearToSource(built);
+    expect(source).not.toHaveProperty("expectedWorkingDays");
+    expect(source.holidays).toEqual([{ date: "2030-01-01", note: "" }]);
   });
 });

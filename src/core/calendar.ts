@@ -1,5 +1,10 @@
 import { addDays, eachDayOfInterval, format, isWeekend, parseISO } from "date-fns";
-import type { ICalendarDay, ICalendarYear, ICalendarYearSource } from "@/types/calendar.types";
+import type {
+  ICalendarDay,
+  ICalendarYear,
+  ICalendarYearSource,
+  ISetCalendarDayDto,
+} from "@/types/calendar.types";
 import type { IClosedPeriod, ISODate } from "@/types/common.types";
 
 /** Date → "YYYY-MM-DD" в локальном времени, без сдвига часового пояса */
@@ -64,7 +69,83 @@ export const buildCalendarYear = (source: ICalendarYearSource): ICalendarYear =>
     };
   });
 
-  return { year: source.year, source: source.source, days };
+  return {
+    year: source.year,
+    source: source.source,
+    expectedWorkingDays: source.expectedWorkingDays,
+    days,
+  };
+};
+
+const byDate = <T extends { date: ISODate }>(a: T, b: T) => a.date.localeCompare(b.date);
+
+/**
+ * Правка одного дня в исходных данных года: день убирается из всех списков и
+ * добавляется в нужный. Выходной в будни — перенос (extraDaysOff), рабочий в сб/вс —
+ * рабочая суббота (workingWeekends). Сокращённым бывает только рабочий день.
+ */
+export const setCalendarDay = (
+  source: ICalendarYearSource,
+  date: ISODate,
+  { kind, isShortened, note }: ISetCalendarDayDto,
+): ICalendarYearSource => {
+  const other = (list: { date: ISODate; note: string }[]) => list.filter((d) => d.date !== date);
+  const holidays = other(source.holidays);
+  const extraDaysOff = other(source.extraDaysOff);
+  const workingWeekends = other(source.workingWeekends);
+  const shortened = source.shortened.filter((d) => d !== date);
+  const naturalWeekend = isWeekend(fromISODate(date));
+  const text = note?.trim() ?? "";
+
+  if (kind === "holiday") holidays.push({ date, note: text || "Праздник" });
+  if (kind === "weekend" && !naturalWeekend) extraDaysOff.push({ date, note: text || "Перенос" });
+  if (kind === "workday" && naturalWeekend) {
+    workingWeekends.push({ date, note: text || "Рабочий выходной" });
+  }
+  if (kind === "workday" && isShortened) shortened.push(date);
+
+  return {
+    ...source,
+    holidays: holidays.sort(byDate),
+    extraDaysOff: extraDaysOff.sort(byDate),
+    workingWeekends: workingWeekends.sort(byDate),
+    shortened: shortened.sort(),
+  };
+};
+
+/** Обратно к исходным данным — для экспорта года в JSON (формат импорта) */
+export const yearToSource = (year: ICalendarYear): ICalendarYearSource => {
+  const noted = (day: ICalendarDay) => ({ date: day.date, note: day.note ?? "" });
+  return {
+    year: year.year,
+    source: year.source,
+    ...(year.expectedWorkingDays !== undefined && {
+      expectedWorkingDays: year.expectedWorkingDays,
+    }),
+    holidays: year.days.filter((d) => d.kind === "holiday").map(noted),
+    extraDaysOff: year.days.filter((d) => d.kind === "weekend" && d.isTransfer).map(noted),
+    workingWeekends: year.days.filter((d) => d.kind === "workday" && d.isTransfer).map(noted),
+    shortened: year.days.filter((d) => d.isShortened).map((d) => d.date),
+  };
+};
+
+export interface ICalendarDayChange {
+  date: ISODate;
+  before: ICalendarDay;
+  after: ICalendarDay;
+}
+
+/** Какие дни изменятся при замене года: тип или «сокращённый» (примечания не считаем) */
+export const calendarChanges = (
+  before: ICalendarYear,
+  after: ICalendarYear,
+): ICalendarDayChange[] => {
+  const old = new Map(before.days.map((day) => [day.date, day]));
+  return after.days.flatMap((day) => {
+    const prev = old.get(day.date);
+    if (!prev || (prev.kind === day.kind && prev.isShortened === day.isShortened)) return [];
+    return [{ date: day.date, before: prev, after: day }];
+  });
 };
 
 /** Производственный календарь, готовый к быстрым запросам по дате */

@@ -24,10 +24,20 @@ export interface ICalendarYearSource {
   /** Субботы/воскресенья, ставшие рабочими */
   workingWeekends: { date: ISODate; note: string }[];
   shortened: ISODate[];
+  /** Рабочих дней по постановлению — контрольная сумма для сводки */
+  expectedWorkingDays?: number;
+}
+
+/** Правка одного дня администратором */
+export interface ISetCalendarDayDto {
+  kind: DayKind;
+  isShortened: boolean;
+  note?: string;
 }
 
 export interface ICalendarYear {
   year: number;
   source: string;
+  expectedWorkingDays?: number;
   days: ICalendarDay[];
 }

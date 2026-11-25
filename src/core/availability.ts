@@ -154,6 +154,29 @@ export const resolveDeputy = (
   return { status: "no_deputy", actorId: null, chain };
 };
 
+/**
+ * Создаст ли назначение `candidateId` постоянным заместителем `employeeId` цикл.
+ * Идём от кандидата по постоянным заместителям; если вернулись к сотруднику — цикл.
+ * Возвращает путь от кандидата до сотрудника ([B, C, A]) или null, если цикла нет.
+ */
+export const deputyCycle = (
+  employees: IEmployee[],
+  employeeId: string,
+  candidateId: string,
+): string[] | null => {
+  const deputyOf = new Map(employees.map((e) => [e.id, e.deputyId]));
+  const path = [candidateId];
+  let current = candidateId;
+  while (current !== employeeId) {
+    const next = deputyOf.get(current) ?? null;
+    // Цепочка оборвалась или ушла в петлю, не проходящую через сотрудника, — цикла нет
+    if (next === null || path.includes(next)) return null;
+    path.push(next);
+    current = next;
+  }
+  return path;
+};
+
 export interface ICoverage {
   date: ISODate;
   total: number;

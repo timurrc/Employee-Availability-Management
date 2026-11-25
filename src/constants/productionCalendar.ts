@@ -10,6 +10,7 @@ export const PRODUCTION_CALENDAR_SOURCES: ICalendarYearSource[] = [
   {
     year: 2026,
     source: "Постановление Правительства РФ от 24.09.2025 № 1466",
+    expectedWorkingDays: 247,
     holidays: [
       { date: "2026-01-01", note: "Новогодние каникулы" },
       { date: "2026-01-02", note: "Новогодние каникулы" },
@@ -38,6 +39,7 @@ export const PRODUCTION_CALENDAR_SOURCES: ICalendarYearSource[] = [
   {
     year: 2027,
     source: "Постановление Правительства РФ от 17.09.2026 № 1187",
+    expectedWorkingDays: 247,
     holidays: [
       { date: "2027-01-01", note: "Новогодние каникулы" },
       { date: "2027-01-02", note: "Новогодние каникулы" },

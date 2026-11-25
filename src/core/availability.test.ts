@@ -7,6 +7,7 @@ import {
   coverageConflicts,
   requestCoverage,
   departmentCoverage,
+  deputyCycle,
   resolveDeputy,
   statusOn,
 } from "./availability";
@@ -255,5 +256,35 @@ describe("покрытие подразделения", () => {
       ["2026-12-04", 4],
       ["2026-12-07", 4],
     ]);
+  });
+});
+
+describe("deputyCycle", () => {
+  const employees = [
+    makeEmployee("a", { deputyId: "b" }),
+    makeEmployee("b", { deputyId: "c" }),
+    makeEmployee("c", { deputyId: null }),
+    makeEmployee("x", { deputyId: "y" }),
+    makeEmployee("y", { deputyId: "x" }),
+  ];
+
+  it("назначение, замыкающее цепочку, — цикл с путём от кандидата", () => {
+    expect(deputyCycle(employees, "c", "a")).toEqual(["a", "b", "c"]);
+  });
+
+  it("сам себе заместитель — цикл", () => {
+    expect(deputyCycle(employees, "a", "a")).toEqual(["a"]);
+  });
+
+  it("цепочка обрывается — цикла нет", () => {
+    expect(deputyCycle(employees, "a", "c")).toBeNull();
+  });
+
+  it("чужая петля, не проходящая через сотрудника, — не цикл и не зависание", () => {
+    expect(deputyCycle(employees, "a", "x")).toBeNull();
+  });
+
+  it("неизвестный кандидат — цикла нет", () => {
+    expect(deputyCycle(employees, "a", "zzz")).toBeNull();
   });
 });
