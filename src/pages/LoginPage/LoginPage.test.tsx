@@ -23,7 +23,10 @@ describe("LoginPage", () => {
   it("показывает учётную запись для каждой роли с ФИО из справочника", async () => {
     renderLogin();
     expect(
-      await screen.findByRole("button", { name: "Руководитель: Кузнецов Дмитрий Александрович" }),
+      await screen.findByRole("button", {
+        // Имя из видимого текста: «Руководитель: ФИО · должность» (jsdom склеивает span без пробела)
+        name: /^Руководитель:\s?Кузнецов Дмитрий Александрович\s?· Руководитель ИТ-отдела$/,
+      }),
     ).toBeEnabled();
     for (const label of ["Сотрудник", "Кадровик", "Администратор"]) {
       expect(screen.getByRole("button", { name: new RegExp(label) })).toBeInTheDocument();
@@ -32,7 +35,7 @@ describe("LoginPage", () => {
 
   it("вход под руководителем сохраняет роль и ведёт на state.from", async () => {
     renderLogin();
-    const manager = await screen.findByRole("button", { name: /Руководитель: Кузнецов/ });
+    const manager = await screen.findByRole("button", { name: /Руководитель:\s?Кузнецов/ });
     await userEvent.click(manager);
 
     expect(await screen.findByText("team")).toBeInTheDocument();
